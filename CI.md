@@ -81,12 +81,59 @@ checksum_algorithm: sha256
 In your GitHub repository, add the following secrets:
 
 - `BUNNY_API_KEY`: Your Bunny.net API key (under account settings)
-- `BUNNY_STORAGE_ZONE`: Name of your test storage zone
 - `BUNNY_STORAGE_API_KEY`: Your Bunny.net Storage API key (under FTP & API Access)
+- `PYPI_USERNAME`: Your PyPI username (for publishing)
+- `PYPI_PASSWORD`: Your PyPI password or token (for publishing)
 
-#### GitHub Actions Workflow:
+#### GitHub Actions Workflows:
 
-Create a file at `.github/workflows/integration-tests.yml` that runs the integration tests.
+The repository contains several GitHub Actions workflows:
+
+1. **Unit Tests** (`.github/workflows/unit-tests.yml`)
+   - Runs all unit tests
+   - Triggered on pushes to main and pull requests
+   - Runs on multiple Python versions (3.9, 3.10, 3.11, 3.12)
+   - Uses UV for dependency management
+
+2. **Integration Tests** (`.github/workflows/integration-tests.yml`)
+   - Runs integration tests against real storage providers
+   - Triggered on pushes to main and pull requests
+   - Requires secrets for authentication with storage providers
+   - Includes options for running extended test suites
+
+3. **Linting** (`.github/workflows/lint.yml`)
+   - Runs code quality checks (black, isort, flake8, mypy)
+   - Ensures code style consistency
+   - Triggered on pushes to main and pull requests
+
+4. **Publishing** (`.github/workflows/publish.yml`)
+   - Builds and publishes package to PyPI
+   - Triggered when a tag matching v* is pushed (e.g., v1.0.0)
+   - Uses PYPI_USERNAME and PYPI_PASSWORD secrets
+
+#### Using UV in GitHub Actions
+
+All workflows use UV (https://github.com/astral-sh/uv) instead of pip for package management. Here's why:
+
+**Benefits of Using UV in CI:**
+
+- **Faster Dependency Resolution**: UV resolves dependencies 10-100x faster than pip, reducing setup time
+- **Better Caching**: UV's caching system is more efficient, leading to higher cache hit rates between runs
+- **Consistency**: Using the same package manager in CI as in local development ensures reproducibility
+- **Lockfile Precision**: UV handles lockfiles better, ensuring consistent dependencies across environments
+
+**Practical Performance Impact:**
+
+- 20-40% faster dependency resolution steps
+- 5-15% reduction in total CI time (most time is spent running tests, not installing dependencies)
+- Greatest benefits seen in projects with complex dependency trees and matrix testing
+
+**Tradeoffs:**
+
+- Small overhead for installing UV itself (~5-10 seconds)
+- For very simple projects, benefits may be minimal
+
+For Buckia, UV provides a good balance of speed, consistency, and future-proofing as the project grows.
 
 ## Running Integration Tests
 
@@ -94,15 +141,15 @@ Create a file at `.github/workflows/integration-tests.yml` that runs the integra
 
 ```bash
 # Run all integration tests
-pytest tests/integration
+uv run -m pytest tests/integration
 
 # Run specific test categories
-pytest tests/integration/test_bunny.py
-pytest tests/integration/test_operations.py
-pytest tests/integration/test_sync.py
+uv run -m pytest tests/integration/test_bunny.py
+uv run -m pytest tests/integration/test_operations.py
+uv run -m pytest tests/integration/test_sync.py
 
 # Run with detailed output
-pytest tests/integration -v
+uv run -m pytest tests/integration -v
 ```
 
 ### In CI:
@@ -140,15 +187,17 @@ Integration tests will automatically run on:
 
 ## TODO List
 
-- [ ] Create integration test directory structure
-- [ ] Set up pytest fixtures for Bunny.net testing
-- [ ] Implement test file generation utilities
-- [ ] Add tests for basic file operations
-- [ ] Add tests for synchronization functionality
-- [ ] Add tests for error handling
-- [ ] Create GitHub Actions workflow
+- [x] Create integration test directory structure
+- [x] Set up pytest fixtures for Bunny.net testing
+- [x] Implement test file generation utilities
+- [x] Add tests for basic file operations
+- [x] Add tests for synchronization functionality
+- [x] Add tests for error handling
+- [x] Create GitHub Actions workflow
 - [ ] Document test coverage and results
-- [ ] Implement cleanup procedures for test data
+- [x] Implement cleanup procedures for test data
+- [x] Set up publishing workflow to PyPI
+- [x] Configure workflow to use UV for dependency management
 
 ## Best Practices
 

@@ -27,8 +27,11 @@ To set up Buckia for local development, follow these steps:
    pip install -e ".[dev]"
    ```
    
-   Using uv:
+   Using uv (requires creating a virtual environment first):
    ```bash
+   # Create a virtual environment if you haven't already
+   uv venv
+   # Install in development mode
    uv pip install -e ".[dev]"
    ```
 
@@ -51,12 +54,12 @@ To set up Buckia for local development, follow these steps:
 
 If you're using uv for your development workflow, you can link the local Buckia package to your existing uv environment:
 
-1. Activate your uv environment:
+1. Create and activate your uv environment:
    ```bash
-   # If using a standard venv
-   source /path/to/your/venv/bin/activate
+   # Create a virtual environment (first time)
+   uv venv
    
-   # If using uv directly
+   # Activate the environment
    uv venv activate
    ```
 
@@ -228,6 +231,65 @@ uv pip install -r requirements.txt
 # Check for conflicting packages
 uv pip check
 ```
+
+## Releasing and Publishing
+
+### Publishing to PyPI Using GitHub Actions
+
+Buckia uses GitHub Actions to automatically publish releases to PyPI. The workflow is configured to run when a tag prefixed with "v" is pushed to the repository.
+
+To publish a new release:
+
+1. Update the version number in `/buckia/__init__.py`:
+   ```python
+   __version__ = "x.y.z"  # Replace with the new version number
+   ```
+
+2. Update the `CHANGELOG.md` with details of changes in this version.
+
+3. Commit these changes and push to the main branch:
+   ```bash
+   git add buckia/__init__.py CHANGELOG.md
+   git commit -m "Bump version to x.y.z"
+   git push origin main
+   ```
+
+4. Create and push a new tag for the release:
+   ```bash
+   git tag -a vx.y.z -m "Release version x.y.z"
+   git push origin vx.y.z
+   ```
+
+5. The GitHub Actions workflow will automatically:
+   - Run tests to ensure everything passes
+   - Build the package
+   - Upload to PyPI using the credentials stored in GitHub secrets
+
+6. Monitor the workflow execution on the GitHub Actions tab of the repository.
+
+7. After successful publishing, create a new release on GitHub:
+   - Go to the repository on GitHub
+   - Click on "Releases"
+   - Click "Draft a new release"
+   - Select the tag you just pushed
+   - Fill in the release title and description (you can copy from CHANGELOG.md)
+   - Publish the release
+
+### Manual Publishing to PyPI
+
+If you need to publish manually without using GitHub Actions:
+
+1. Build the distribution packages:
+   ```bash
+   uv pip install build
+   uv run -m build
+   ```
+
+2. Upload the packages to PyPI:
+   ```bash
+   uv pip install twine
+   uv run -m twine upload dist/*
+   ```
 
 ## Contributing
 

@@ -1,5 +1,12 @@
 # Buckia - Bucket backing of an App with a local DB and assets
 
+[![PyPI version](https://img.shields.io/pypi/v/buckia.svg)](https://pypi.org/project/buckia/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/buckia.svg)](https://pypi.org/project/buckia/)
+[![License](https://img.shields.io/github/license/evidently/buckia.svg)](https://github.com/evidently/buckia/blob/main/LICENSE)
+[![Unit Tests](https://github.com/evidently/buckia/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/evidently/buckia/actions/workflows/unit-tests.yml)
+[![Integration Tests](https://github.com/evidently/buckia/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/evidently/buckia/actions/workflows/integration-tests.yml)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 Manages a local cache matched by content in a remote cloud Storage Bucket.
 A local cache for files belonging to a single user is mirrored in a user specific directory in the Storage Bucket. It is intended to support mobile Apps that manage data locally, but need to secure it or share it by pushing a copy to the cloud.
 

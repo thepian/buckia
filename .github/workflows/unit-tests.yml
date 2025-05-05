@@ -38,6 +38,8 @@ jobs:
     
     - name: Install dependencies
       run: |
+        # Create virtual environment and install dependencies
+        uv venv
         uv pip install -e ".[dev,bunny]"
         uv pip install python-dotenv
     
