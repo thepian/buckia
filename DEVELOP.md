@@ -15,19 +15,22 @@ This document provides instructions for local development of the Buckia library,
 To set up Buckia for local development, follow these steps:
 
 1. Clone the repository (if you haven't already):
+
    ```bash
    git clone https://github.com/yourusername/buckia.git
    cd buckia
    ```
 
 2. Install the package in editable mode with development dependencies:
-   
+
    Using pip:
+
    ```bash
    pip install -e ".[dev]"
    ```
-   
+
    Using uv (requires creating a virtual environment first):
+
    ```bash
    # Create a virtual environment if you haven't already
    uv venv
@@ -36,16 +39,17 @@ To set up Buckia for local development, follow these steps:
    ```
 
 3. Install specific backend dependencies as needed:
+
    ```bash
    # For Bunny.net backend
    uv pip install -e ".[bunny,dev]"
-   
+
    # For S3 backend
    uv pip install -e ".[s3,dev]"
-   
+
    # For Linode backend
    uv pip install -e ".[linode,dev]"
-   
+
    # For all backends
    uv pip install -e ".[bunny,s3,linode,dev]"
    ```
@@ -55,25 +59,28 @@ To set up Buckia for local development, follow these steps:
 If you're using uv for your development workflow, you can link the local Buckia package to your existing uv environment:
 
 1. Create and activate your uv environment:
+
    ```bash
    # Create a virtual environment (first time)
    uv venv
-   
+
    # Activate the environment
    uv venv activate
    ```
 
 2. Install buckia in development mode:
+
    ```bash
    cd /path/to/libs/buckia
    uv pip install -e .
    ```
 
 3. Verify the installation:
+
    ```bash
    # Check if buckia is installed
    uv pip list | grep buckia
-   
+
    # Test importing the package
    python -c "import buckia; print(buckia.__version__)"
    ```
@@ -83,28 +90,30 @@ If you're using uv for your development workflow, you can link the local Buckia 
 To use your local development version of Buckia with the record_thing library:
 
 1. Make sure you're using the same Python environment for both:
+
    ```bash
    cd /path/to/record_thing
    uv pip install -e /path/to/libs/buckia
    ```
 
 2. Create a test script to verify the integration:
+
    ```python
    # test_buckia_integration.py
    import buckia
    from record_thing import your_module  # Import your record_thing module
-   
+
    print(f"Buckia version: {buckia.__version__}")
-   
+
    # Test creating a Buckia client
    config = buckia.BucketConfig(
        provider="bunny",
        bucket_name="test-bucket"
    )
-   
+
    client = buckia.BuckiaClient(config)
    print("Successfully initialized Buckia client")
-   
+
    # Add your integration test code here
    ```
 
@@ -118,6 +127,7 @@ To use your local development version of Buckia with the record_thing library:
 ### Making Changes
 
 1. Create a new branch for your changes:
+
    ```bash
    git checkout -b feature/your-feature-name
    ```
@@ -125,11 +135,21 @@ To use your local development version of Buckia with the record_thing library:
 2. Make your changes to the code.
 
 3. Run tests to ensure your changes don't break existing functionality:
+
    ```bash
    pytest
    ```
 
-4. Commit your changes:
+4. Format your code with Black:
+   ```bash
+   black .
+   ```
+
+A pre-commit hook is set up to run Black and mypy automatically when you commit.
+If Black would make changes or mypy detects type errors, the commit will be blocked
+until you fix the issues and stage the changes.
+
+5. Commit your changes:
    ```bash
    git add .
    git commit -m "Add your meaningful commit message"
@@ -241,6 +261,7 @@ Buckia uses GitHub Actions to automatically publish releases to PyPI. The workfl
 To publish a new release:
 
 1. Update the version number in `/buckia/__init__.py`:
+
    ```python
    __version__ = "x.y.z"  # Replace with the new version number
    ```
@@ -248,6 +269,7 @@ To publish a new release:
 2. Update the `CHANGELOG.md` with details of changes in this version.
 
 3. Commit these changes and push to the main branch:
+
    ```bash
    git add buckia/__init__.py CHANGELOG.md
    git commit -m "Bump version to x.y.z"
@@ -255,12 +277,14 @@ To publish a new release:
    ```
 
 4. Create and push a new tag for the release:
+
    ```bash
    git tag -a vx.y.z -m "Release version x.y.z"
    git push origin vx.y.z
    ```
 
 5. The GitHub Actions workflow will automatically:
+
    - Run tests to ensure everything passes
    - Build the package
    - Upload to PyPI using the credentials stored in GitHub secrets
@@ -280,6 +304,7 @@ To publish a new release:
 If you need to publish manually without using GitHub Actions:
 
 1. Build the distribution packages:
+
    ```bash
    uv pip install build
    uv run -m build
@@ -299,4 +324,4 @@ If you need to publish manually without using GitHub Actions:
 4. Run tests
 5. Submit a pull request
 
-Please follow the coding style used in the project and include tests for new features. 
+Please follow the coding style used in the project and include tests for new features.

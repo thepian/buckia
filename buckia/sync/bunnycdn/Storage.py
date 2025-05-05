@@ -1,12 +1,14 @@
 """This code is to use the BunnyCDN Storage API"""
 
-import os
 import logging
-import requests
-from requests.exceptions import HTTPError
+import os
 from urllib import parse
 
-logger = logging.getLogger('bunny')
+import requests
+from requests.exceptions import HTTPError
+
+logger = logging.getLogger("bunny")
+
 
 class Storage:
 
@@ -113,7 +115,6 @@ class Storage:
         storage_path=None,
         local_upload_file_path=os.getcwd(),
     ):
-
         """
         This function uploads files to your BunnyCDN storage zone
         Parameters

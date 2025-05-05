@@ -1,13 +1,13 @@
 import json
+from urllib import parse
+
 import requests
 from requests.exceptions import HTTPError
-from urllib import parse
 
 
 class CDN:
     # initializer function
     def __init__(self, api_key):
-
         """
         Parameters
         ----------
@@ -40,11 +40,7 @@ class CDN:
             url = self.base_url + parse.quote(Task_name)
         return url
 
-    def AddCertificate(self,
-                       PullZoneId,
-                       Hostname,
-                       Certificate,
-                       CertificateKey):
+    def AddCertificate(self, PullZoneId, Hostname, Certificate, CertificateKey):
         """
         This function adds custom certificate to the given pullzone
 
@@ -82,13 +78,9 @@ class CDN:
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "success",
@@ -109,25 +101,17 @@ class CDN:
         BlockedIP       : string
                           The IP address that will be blocked
         """
-        values = json.dumps(
-            {"PullZoneId": PullZoneId,
-             "BlockedIp": BlockedIp}
-            )
+        values = json.dumps({"PullZoneId": PullZoneId, "BlockedIp": BlockedIp})
 
         try:
             response = requests.post(
-                self._Geturl("pullzone/addBlockedIp"), data=values,
-                headers=self.headers
+                self._Geturl("pullzone/addBlockedIp"), data=values, headers=self.headers
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "success",
@@ -158,18 +142,14 @@ class CDN:
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "success",
                 "HTTP": response.status_code,
-                "msg": "Ip removed from blocked IPs list "
+                "msg": "Ip removed from blocked IPs list ",
             }
 
     def StorageZoneData(self):
@@ -179,17 +159,12 @@ class CDN:
 
         """
         try:
-            response = requests.get(self._Geturl("storagezone"),
-                                    headers=self.headers)
+            response = requests.get(self._Geturl("storagezone"), headers=self.headers)
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             storage_summary = []
             for storagezone in response.json():
@@ -214,17 +189,12 @@ class CDN:
         name and storage zone id
         """
         try:
-            response = requests.get(self._Geturl("storagezone"),
-                                    headers=self.headers)
+            response = requests.get(self._Geturl("storagezone"), headers=self.headers)
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             storage_list = []
             for storagezone in response.json():
@@ -232,8 +202,7 @@ class CDN:
             return storage_list
 
     def AddStorageZone(
-        self, storage_zone_name, storage_zone_region="DE",
-        ReplicationRegions=["DE"]
+        self, storage_zone_name, storage_zone_region="DE", ReplicationRegions=["DE"]
     ):
         """
         This method creates a new storage zone
@@ -274,13 +243,9 @@ class CDN:
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "success",
@@ -289,7 +254,6 @@ class CDN:
             }
 
     def GetStorageZone(self, storage_zone_id):
-
         """
         This function returns details about the storage zone
         whose id is mentioned
@@ -302,18 +266,13 @@ class CDN:
         """
         try:
             response = requests.get(
-                self._Geturl(f"storagezone/{storage_zone_id}"),
-                headers=self.headers
+                self._Geturl(f"storagezone/{storage_zone_id}"), headers=self.headers
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return response.json()
 
@@ -328,18 +287,13 @@ class CDN:
         """
         try:
             response = requests.delete(
-                self._Geturl(f"storagezone/{storage_zone_id}"),
-                headers=self.headers
+                self._Geturl(f"storagezone/{storage_zone_id}"), headers=self.headers
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "Success",
@@ -359,18 +313,13 @@ class CDN:
         """
         try:
             response = requests.post(
-                self._Geturl("purge"), params={"url": url},
-                headers=self.headers
+                self._Geturl("purge"), params={"url": url}, headers=self.headers
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "Success",
@@ -384,17 +333,12 @@ class CDN:
 
         """
         try:
-            response = requests.get(self._Geturl("billing"),
-                                    headers=self.headers)
+            response = requests.get(self._Geturl("billing"), headers=self.headers)
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return response.json()
 
@@ -415,13 +359,9 @@ class CDN:
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "success",
@@ -478,13 +418,9 @@ class CDN:
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return response.json()
 
@@ -497,17 +433,12 @@ class CDN:
         None
         """
         try:
-            response = requests.get(self._Geturl("pullzone"),
-                                    headers=self.headers)
+            response = requests.get(self._Geturl("pullzone"), headers=self.headers)
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             pullzone_list = []
             for pullzone in response.json():
@@ -538,11 +469,7 @@ class CDN:
         """
 
         if StorageZoneId is None:
-            values = json.dumps(
-                {"Name": Name,
-                 "Type": Type,
-                 "OriginURL": OriginURL}
-                )
+            values = json.dumps({"Name": Name, "Type": Type, "OriginURL": OriginURL})
         else:
             values = {
                 "Name": Name,
@@ -556,13 +483,9 @@ class CDN:
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return response.json()
 
@@ -582,13 +505,9 @@ class CDN:
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return response.json()
 
@@ -869,17 +788,13 @@ class CDN:
             response = requests.post(
                 self._Geturl(f"pullzone/{PullZoneID}"),
                 data=values,
-                headers=self.headers
+                headers=self.headers,
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "success",
@@ -903,13 +818,9 @@ class CDN:
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "success",
@@ -929,18 +840,13 @@ class CDN:
         """
         try:
             response = requests.post(
-                self._Geturl(f"pullzone/{PullZoneID}/purgeCache"),
-                headers=self.headers
+                self._Geturl(f"pullzone/{PullZoneID}/purgeCache"), headers=self.headers
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "success",
@@ -960,7 +866,6 @@ class CDN:
         Triggers,
         GUID=None,
     ):
-
         """
         This function Adds or Updates the Edgerule
 
@@ -1016,19 +921,15 @@ class CDN:
             )
             try:
                 response = requests.post(
-                  self._Geturl(f"pullzone/{PullZoneID}/edgerules/addOrUpdate"),
-                  data=values,
-                  headers=self.headers,
+                    self._Geturl(f"pullzone/{PullZoneID}/edgerules/addOrUpdate"),
+                    data=values,
+                    headers=self.headers,
                 )
                 response.raise_for_status()
             except HTTPError as http:
-                return {"status": "error",
-                        "HTTP": response.status_code,
-                        "msg": http}
+                return {"status": "error", "HTTP": response.status_code, "msg": http}
             except Exception as err:
-                return {"status": "error",
-                        "HTTP": response.status_code,
-                        "msg": err}
+                return {"status": "error", "HTTP": response.status_code, "msg": err}
             else:
                 return {
                     "status": "success",
@@ -1051,19 +952,15 @@ class CDN:
 
             try:
                 response = requests.post(
-                  self._Geturl(f"pullzone/{PullZoneID}/edgerules/addOrUpdate"),
-                  data=values,
-                  headers=self.headers,
+                    self._Geturl(f"pullzone/{PullZoneID}/edgerules/addOrUpdate"),
+                    data=values,
+                    headers=self.headers,
                 )
                 response.raise_for_status()
             except HTTPError as http:
-                return {"status": "error",
-                        "HTTP": response.status_code,
-                        "msg": http}
+                return {"status": "error", "HTTP": response.status_code, "msg": http}
             except Exception as err:
-                return {"status": "error",
-                        "HTTP": response.status_code,
-                        "msg": err}
+                return {"status": "error", "HTTP": response.status_code, "msg": err}
             else:
                 return {
                     "status": "success",
@@ -1091,13 +988,9 @@ class CDN:
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "success",
@@ -1125,17 +1018,13 @@ class CDN:
             response = requests.post(
                 self._Geturl(f"pullzone/{PullZoneID}/addHostname"),
                 data=values,
-                headers=self.headers
+                headers=self.headers,
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "success",
@@ -1144,7 +1033,6 @@ class CDN:
             }
 
     def DeleteCustomHostname(self, PullZoneID, Hostname):
-
         """
         This function is used to delete custom hostname of a pullzone
 
@@ -1167,13 +1055,9 @@ class CDN:
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "success",
@@ -1200,25 +1084,18 @@ class CDN:
                              to the SSL version of the URLs
 
         """
-        values = json.dumps(
-            {"Hostname": Hostname,
-             "ForceSSL": ForceSSL}
-        )
+        values = json.dumps({"Hostname": Hostname, "ForceSSL": ForceSSL})
         try:
             response = requests.post(
                 self._Geturl(f"pullzone/{PullZoneID}/setForceSSL"),
                 data=values,
-                headers=self.headers
+                headers=self.headers,
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return {
                 "status": "success",
@@ -1241,23 +1118,19 @@ class CDN:
         try:
             response = requests.get(
                 self._Geturl("pullzone/loadFreeCertificate"),
-                params={'hostname': Hostname},
+                params={"hostname": Hostname},
                 headers=self.headers,
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
             return self.GetPullZoneList()
 
     def GetVideoLibrary(self, id):
-        '''
+        """
         Returns the Video Library details for the given ID
 
         Parameters
@@ -1265,52 +1138,47 @@ class CDN:
         id       :  number
                     The ID of the Video Library to return
 
-        '''
+        """
         try:
             response = requests.get(
-             self._Geturl("videolibrary"), params={'id': id},
-             headers=self.headers,
+                self._Geturl("videolibrary"),
+                params={"id": id},
+                headers=self.headers,
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
-            return {"status": "success",
-                    "HTTP": response.status_code,
-                    "msg": response.json()
-                    }
+            return {
+                "status": "success",
+                "HTTP": response.status_code,
+                "msg": response.json(),
+            }
 
     def DeleteVideoLibrary(self, id):
-        '''
+        """
         Deletes the Video Library with the given ID
 
         Parameters
         ----------
         id      : number
                   The ID of the library that should be deleted
-        '''
+        """
         try:
             response = requests.delete(
-             self._Geturl(f"videolibrary/{id}"),
-             headers=self.headers,
+                self._Geturl(f"videolibrary/{id}"),
+                headers=self.headers,
             )
             response.raise_for_status()
         except HTTPError as http:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": http}
+            return {"status": "error", "HTTP": response.status_code, "msg": http}
         except Exception as err:
-            return {"status": "error",
-                    "HTTP": response.status_code,
-                    "msg": err}
+            return {"status": "error", "HTTP": response.status_code, "msg": err}
         else:
-            return {"status": "success",
-                    "HTTP": response.status_code,
-                    "msg": "Deleted Video Library"
-                    }
+            return {
+                "status": "success",
+                "HTTP": response.status_code,
+                "msg": "Deleted Video Library",
+            }

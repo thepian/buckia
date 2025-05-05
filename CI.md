@@ -105,6 +105,7 @@ The repository contains several GitHub Actions workflows:
    - Runs code quality checks (black, isort, flake8, mypy)
    - Ensures code style consistency
    - Triggered on pushes to main and pull requests
+   - Complements the local pre-commit hook that runs Black
 
 4. **Publishing** (`.github/workflows/publish.yml`)
    - Builds and publishes package to PyPI
@@ -194,7 +195,7 @@ Integration tests will automatically run on:
 - [x] Add tests for synchronization functionality
 - [x] Add tests for error handling
 - [x] Create GitHub Actions workflow
-- [ ] Document test coverage and results
+- [x] Document test coverage and results
 - [x] Implement cleanup procedures for test data
 - [x] Set up publishing workflow to PyPI
 - [x] Configure workflow to use UV for dependency management

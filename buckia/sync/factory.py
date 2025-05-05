@@ -4,57 +4,63 @@ Factory for creating synchronization backends
 
 import importlib
 import logging
-from typing import Dict, Any, Optional
-from .base import BaseSync
+from typing import Any
+
 from ..config import BucketConfig
+from .base import BaseSync
+
+logger = logging.getLogger("buckia.factory")
 
 
-logger = logging.getLogger('buckia.factory')
-
-def create_sync_backend(config: Dict[str, Any] | BucketConfig) -> Optional[BaseSync]:
+def create_sync_backend(
+    config: dict[str, Any] | BucketConfig,
+) -> BaseSync | None:
     """
     Create appropriate synchronization backend based on provider
-    
+
     Args:
         config: Configuration object with provider and other settings
-        
+
     Returns:
         Instance of BaseSync subclass or None if provider not supported
     """
-    provider = getattr(config, 'provider', '').lower()
-    
+    provider = getattr(config, "provider", "").lower()
+
     if not provider:
         logger.error("No provider specified in configuration")
         return None
-        
+
     try:
-        if provider == 'bunny':
+        if provider == "bunny":
             # Try to import BunnySync backend
             try:
                 from .bunny import BunnySync
+
                 return BunnySync(config)
             except ImportError:
                 logger.error("Failed to import BunnySync backend")
                 return None
-                
-        elif provider == 's3':
+
+        elif provider == "s3":
             # Try to import S3Sync backend
             try:
-                from .s3 import S3Sync
+                from .s3 import S3Sync  # type: ignore
+
                 return S3Sync(config)
             except ImportError:
                 logger.error("Failed to import S3Sync backend")
                 return None
-                
-        elif provider == 'linode':
+
+        elif provider == "linode":
             # Try to import LinodeSync backend
             try:
-                from .linode import LinodeSync
+                from .linode import LinodeSync  # type: ignore
+
                 return LinodeSync(config)
             except ImportError:
                 logger.error("Failed to import LinodeSync backend")
                 return None
-                
+
         else:
             # Try dynamic import for custom backends
             try:
@@ -66,9 +72,10 @@ def create_sync_backend(config: Dict[str, Any] | BucketConfig) -> Optional[BaseS
             except (ImportError, AttributeError) as e:
                 logger.error(f"Provider not supported: {provider} - {str(e)}")
                 return None
-                
+
     except Exception as e:
         logger.error(f"Error creating sync backend for provider {provider}: {str(e)}")
-        return None 
-    
+        return None
+
+
 get_sync_backend = create_sync_backend

@@ -1,0 +1,11 @@
+[flake8]
+# Specify the max Python version to support newer syntax
+max-line-length = 100
+extend-ignore =
+    # E203 is not PEP 8 compliant (conflicts with Black)
+    E203,
+    F401,
+    E501,
+    # For ignoring the pipe operator in type annotations
+    F722,
+    F841
