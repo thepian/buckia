@@ -1,0 +1,17 @@
+# Example test configuration for Bunny.net
+# Copy this file to test_config.yaml and fill in your credentials
+
+provider: bunny
+bucket_name: buckia-test
+auth:
+  api_key: your-api-key
+  storage_api_key: your-storage-api-key
+sync:
+  delete_orphaned: true
+  max_workers: 4
+checksum_algorithm: sha256
+provider_settings:
+  hostname: storage.bunnycdn.com  # Default Bunny.net hostname
+  # Optional pull zone settings for CDN tests
+  # pull_zone_name: your-pull-zone-name
+  # cdn_url: https://your-cdn-url.b-cdn.net

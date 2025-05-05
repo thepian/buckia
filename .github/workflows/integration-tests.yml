@@ -1,0 +1,99 @@
+name: Buckia Integration Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      run_full_suite:
+        description: 'Run full test suite including stress tests'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.8", "3.9", "3.10"]
+      # Don't fail fast so we get results from all versions
+      fail-fast: false
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        # Install the package with test dependencies
+        pip install -e ".[dev,bunny]"
+    
+    - name: Create test configuration
+      run: |
+        mkdir -p tests/config
+        cat > tests/config/test_config.yaml << EOF
+        provider: bunny
+        bucket_name: buckia-test
+        auth:
+          api_key: ${{ secrets.BUNNY_API_KEY }}
+          storage_api_key: ${{ secrets.BUNNY_STORAGE_API_KEY }}
+        sync:
+          delete_orphaned: true
+          max_workers: 4
+        checksum_algorithm: sha256
+        provider_settings:
+          hostname: storage.bunnycdn.com
+        EOF
+    
+    - name: Validate credentials
+      run: |
+        # Basic validation to ensure secrets are set
+        # This will fail if secrets are not properly configured
+        python -c "import os, sys; \
+        missing = [k for k in ['BUNNY_API_KEY', 'BUNNY_STORAGE_API_KEY'] \
+                  if not os.environ.get('SECRETS_' + k)]; \
+        if missing: \
+            print(f'Error: Missing required secrets: {missing}', file=sys.stderr); \
+            sys.exit(1);"
+      env:
+        SECRETS_BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        SECRETS_BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
+    
+    - name: Run basic tests
+      run: |
+        pytest tests/integration/test_bunny.py tests/integration/test_operations.py -v
+      env:
+        BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
+    
+    - name: Run sync tests
+      run: |
+        pytest tests/integration/test_sync.py -v
+      env:
+        BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
+    
+    - name: Run error handling tests
+      run: |
+        pytest tests/integration/test_error_handling.py -v
+      env:
+        BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
+    
+    - name: Run stress tests (if requested)
+      if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_full_suite == 'true' }}
+      run: |
+        pytest tests/integration/test_error_handling.py::test_network_throttling -v
+      env:
+        BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
+        STRESS_TEST: "1"
