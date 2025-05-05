@@ -34,8 +34,8 @@ def test_basic_sync(buckia_client, test_directory_factory, remote_test_prefix, c
     )
     
     # Check sync result
-    assert result['uploaded'] >= len(test_files), f"Expected at least {len(test_files)} uploads, got {result['uploaded']}"
-    assert result['failed'] == 0, f"Sync reported {result['failed']} failed operations"
+    assert result.uploaded >= len(test_files), f"Expected at least {len(test_files)} uploads, got {result.uploaded}"
+    assert result.failed == 0, f"Sync reported {result.failed} failed operations"
     
     # List remote files to verify uploads
     remote_files = buckia_client.list_files()
@@ -64,7 +64,7 @@ def test_sync_with_updates(buckia_client, test_directory_factory, remote_test_pr
         dry_run=False,
     )
     
-    assert result1['uploaded'] >= len(test_files), "Initial sync failed"
+    assert result1.uploaded >= len(test_files), "Initial sync failed"
     
     # Modify some files
     for file_to_update in ["update1.txt", "update2.txt"]:
@@ -81,9 +81,9 @@ def test_sync_with_updates(buckia_client, test_directory_factory, remote_test_pr
     )
     
     # Should have updated 2 files
-    assert result2['uploaded'] >= 2, f"Expected at least 2 updated files, got {result2['uploaded']}"
+    assert result2.uploaded >= 2, f"Expected at least 2 updated files, got {result2.uploaded}"
     # 1 file should be unchanged
-    assert result2['unchanged'] >= 1, f"Expected at least 1 unchanged file, got {result2['unchanged']}"
+    assert result2.unchanged >= 1, f"Expected at least 1 unchanged file, got {result2.unchanged}"
 
 
 def test_sync_with_deletions(buckia_client, test_directory_factory, remote_test_prefix, cleanup_remote_files):
@@ -106,7 +106,7 @@ def test_sync_with_deletions(buckia_client, test_directory_factory, remote_test_
         dry_run=False,
     )
     
-    assert result1['uploaded'] >= len(test_files), "Initial sync failed"
+    assert result1.uploaded >= len(test_files), "Initial sync failed"
     
     # Delete some local files
     for file_to_delete in ["delete1.txt", "delete2.txt"]:
@@ -122,7 +122,7 @@ def test_sync_with_deletions(buckia_client, test_directory_factory, remote_test_
     )
     
     # Should have deleted 2 files
-    assert result2['deleted'] >= 2, f"Expected at least 2 deleted files, got {result2['deleted']}"
+    assert result2.deleted >= 2, f"Expected at least 2 deleted files, got {result2.deleted}"
     
     # Verify that deleted files are no longer in remote storage
     remote_files = buckia_client.list_files()
@@ -161,7 +161,7 @@ def test_sync_with_filters(buckia_client, test_directory_factory, remote_test_pr
     
     # Should have uploaded only txt files (2)
     txt_files = [f for f in test_files.keys() if f.endswith('.txt')]
-    assert result1['uploaded'] >= len(txt_files), f"Expected to upload {len(txt_files)} .txt files, got {result1['uploaded']}"
+    assert result1.uploaded >= len(txt_files), f"Expected to upload {len(txt_files)} .txt files, got {result1.uploaded}"
     
     # Verify that only txt files are in remote storage
     remote_files = buckia_client.list_files()
@@ -186,8 +186,8 @@ def test_sync_with_filters(buckia_client, test_directory_factory, remote_test_pr
     
     # Should have uploaded txt and js files, but not png or json
     non_excluded_files = [f for f in test_files.keys() if not (f.endswith('.png') or f.endswith('.json'))]
-    assert result2['uploaded'] >= len(non_excluded_files), \
-        f"Expected to upload {len(non_excluded_files)} non-excluded files, got {result2['uploaded']}"
+    assert result2.uploaded >= len(non_excluded_files), \
+        f"Expected to upload {len(non_excluded_files)} non-excluded files, got {result2.uploaded}"
     
     # Verify that only non-excluded files are in remote storage
     remote_files = buckia_client.list_files()
@@ -235,8 +235,8 @@ def test_sync_specific_paths(buckia_client, test_directory_factory, remote_test_
             expected_synced_count += 1
     
     # Should have uploaded only files in specified paths
-    assert result['uploaded'] >= expected_synced_count, \
-        f"Expected to upload {expected_synced_count} files in specified paths, got {result['uploaded']}"
+    assert result.uploaded >= expected_synced_count, \
+        f"Expected to upload {expected_synced_count} files in specified paths, got {result.uploaded}"
     
     # Verify that only files in specified paths are in remote storage
     remote_files = buckia_client.list_files()
@@ -272,8 +272,8 @@ def test_sync_dry_run(buckia_client, test_directory_factory, remote_test_prefix,
     )
     
     # Should report files that would be uploaded
-    assert result.get('uploaded', 0) >= len(test_files), \
-        f"Dry run should report {len(test_files)} files to upload, got {result.get('uploaded', 0)}"
+    assert result.uploaded >= len(test_files), \
+        f"Dry run should report {len(test_files)} files to upload, got {result.uploaded}"
     
     # Verify that no files were actually uploaded
     after_dry_run_remote_files = set(buckia_client.list_files().keys())

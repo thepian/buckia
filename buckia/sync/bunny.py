@@ -2,14 +2,15 @@
 Bunny.net synchronization backend for Buckia
 """
 
-import os
-import json
 import hashlib
-import requests
+import json
 import logging
-from typing import Dict, List, Optional, Any, Set, Tuple
-from pathlib import Path
+import os
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+import requests
 
 from .base import BaseSync
 
@@ -33,51 +34,56 @@ class BunnySync(BaseSync):
         self.authenticated_cdn_endpoint = self.config.get_provider_setting('authenticated_cdn_endpoint')
         self.cdn_url = self.config.get_provider_setting('cdn_url')
         self.pull_zone_name = self.config.get_provider_setting('pull_zone_name')
-        self.use_bunnycdn_package = self.config.get_provider_setting('use_bunnycdn_package', False)
         
         # Initialize session
         self.session = requests.Session()
-        if self.api_key:
+        # Use storage_api_key for storage operations if available, otherwise fall back to api_key
+        if self.storage_api_key:
+            self.session.headers.update({
+                'AccessKey': self.storage_api_key,
+                'Accept': 'application/json'
+            })
+        elif self.api_key:
             self.session.headers.update({
                 'AccessKey': self.api_key,
                 'Accept': 'application/json'
             })
             
-        # Initialize bunnycdnpython client if requested and available
+        # Always initialize bunnycdnpython client if available
         self.bunny_client = None
-        if self.use_bunnycdn_package:
-            # Try to import bunnycdnpython package
+        
+        # Try to import bunnycdnpython package
+        try:
+            # Import from bundled copy or try system installation
             try:
-                # Import from bundled copy or try system installation
-                try:
-                    from .bunnycdn.Storage import Storage
-                    from .bunnycdn.CDN import CDN
-                    use_bundled = True
-                except ImportError:
-                    # Try system installation
-                    from BunnyCDN.Storage import Storage
-                    from BunnyCDN.CDN import CDN
-                    use_bundled = False
-                    
-                logger.info(f"Using {'bundled' if use_bundled else 'system'} bunnycdnpython package")
-                
-                if self.storage_api_key:
-                    # Initialize Storage with the correct parameter order
-                    storage_region = self.storage_region if self.storage_region else ""
-                    self.bunny_client = Storage(
-                        self.storage_api_key,
-                        self.storage_zone_name,
-                        storage_region
-                    )
-                    logger.info("Initialized bunnycdnpython client")
-                else:
-                    logger.warning("storage_api_key not provided, cannot use bunnycdnpython package")
-                    
+                from .bunnycdn.CDN import CDN
+                from .bunnycdn.Storage import Storage
+                use_bundled = True
             except ImportError:
-                logger.warning("bunnycdnpython package not available, falling back to direct API calls")
+                # Try system installation
+                from BunnyCDN.CDN import CDN
+                from BunnyCDN.Storage import Storage
+                use_bundled = False
                 
-            except Exception as e:
-                logger.error(f"Failed to initialize bunnycdnpython client: {str(e)}")
+            logger.info(f"Using {'bundled' if use_bundled else 'system'} bunnycdnpython package")
+            
+            if self.storage_api_key:
+                # Initialize Storage with the correct parameter order
+                storage_region = self.storage_region if self.storage_region else ""
+                self.bunny_client = Storage(
+                    self.storage_api_key,
+                    self.storage_zone_name,
+                    storage_region
+                )
+                logger.debug("Initialized bunnycdnpython client")
+            else:
+                logger.warning("storage_api_key not provided, cannot use bunnycdnpython package")
+                
+        except ImportError:
+            logger.warning("bunnycdnpython package not available, falling back to direct API calls")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize bunnycdnpython client: {str(e)}")
     
     def connect(self) -> bool:
         """Establish connection to Bunny.net storage"""
@@ -87,7 +93,7 @@ class BunnySync(BaseSync):
                 # Test using bunnycdnpython client
                 try:
                     self.bunny_client.GetStoragedObjectsList()
-                    logger.info("Successfully connected to Bunny.net API using bunnycdnpython")
+                    logger.debug("Successfully connected to Bunny.net API using bunnycdnpython")
                     return True
                 except Exception as e:
                     logger.error(f"bunnycdnpython connection error: {str(e)}")
@@ -125,7 +131,16 @@ class BunnySync(BaseSync):
         # Test API key connection
         try:
             url = f"{self.storage_api_url}/{self.storage_zone_name}/"
-            response = self.session.get(url)
+            logger.info(f"API call to {url}")
+            
+            # Create headers with the storage_api_key for the storage API test
+            headers = {
+                'AccessKey': self.storage_api_key if self.storage_api_key else self.api_key,
+                'Accept': 'application/json'
+            }
+            
+            # Use requests directly with the proper headers instead of self.session
+            response = requests.get(url, headers=headers)
             
             if response.status_code == 200:
                 results['api_key'] = True
@@ -342,6 +357,15 @@ class BunnySync(BaseSync):
                 # Create directory if it doesn't exist
                 os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
                 
+                # Create a temporary directory to download to
+                local_dir = os.path.dirname(local_file_path)
+                file_name = os.path.basename(local_file_path)
+                
+                # If local_dir doesn't exist, create it
+                if not os.path.exists(local_dir):
+                    os.makedirs(local_dir, exist_ok=True)
+                
+                # Download to the correct location
                 self.bunny_client.DownloadFile(remote_path, local_file_path)
                 logger.info(f"Successfully downloaded with bunnycdnpython: {remote_path}")
                 return True
@@ -363,7 +387,8 @@ class BunnySync(BaseSync):
         else:
             # Use API key authentication
             url = f"{self.storage_api_url}/{self.storage_zone_name}/{remote_path}"
-            headers = {'AccessKey': self.api_key}
+            # Use storage_api_key if available, otherwise fall back to api_key
+            headers = {'AccessKey': self.storage_api_key if self.storage_api_key else self.api_key}
         
         try:
             # Create directory if it doesn't exist

@@ -2,8 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-
-
 ### General Behavior Protocol
 
 Always provide complete, untruncated versions of code and text updates unless explicitly requested otherwise by the user.
@@ -44,20 +42,22 @@ Follow these steps for each interaction:
 
 - Sequential Thinking: Always use when available
 - Brave Search: Use for research validation and source citation
-  * Validate statements with research
-  * Provide source URLs
-  * Support claims with relevant references
-
+  - Validate statements with research
+  - Provide source URLs
+  - Support claims with relevant references
 
 # Codebase Overview
 
 ## Development Commands
 
 - Install dev dependencies: `uv pip install -e ".[bunny,s3,linode,dev]"`
-- Run all tests: `pytest`
-- Run specific test file: `pytest tests/integration/test_operations.py`
-- Run specific test: `pytest tests/integration/test_operations.py::test_file_upload_download`
-- Test with coverage: `pytest --cov=buckia`
+- Install additional dependencies: `uv pip install python-dotenv`
+- Run all tests: `uv run scripts/run_tests.sh`
+- Run only unit tests: `uv run scripts/run_tests.sh tests/unit`
+- Run integration tests: `uv run -m pytest tests/integration/`
+- Run specific test file: `uv run -m pytest tests/integration/test_operations.py`
+- Run specific test: `uv run -m pytest tests/integration/test_operations.py::test_file_upload_download`
+- Test with coverage: `uv run -m pytest --cov=buckia`
 
 ## Code Style Guidelines
 

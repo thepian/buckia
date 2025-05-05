@@ -41,6 +41,9 @@ setup(
         'dev': [
             'pytest>=6.2.0',
             'pytest-cov>=2.10.1',
+            'pytest-env>=0.8.1',
+            'pytest-timeout>=2.1.0',
+            'pytest-dotenv>=0.5.2',
             'black>=20.8b1',
             'flake8>=3.8.4',
             'mypy>=0.790',
