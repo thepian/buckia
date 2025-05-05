@@ -58,7 +58,7 @@ def test_sync_result_init():
     assert result.unchanged == 0
     assert result.errors == []
     assert result.protected_skipped == 0
-    assert result.cached == 0
+    assert result.cached == 0  # Kept for backward compatibility but no longer used
     
     # Test with custom values
     result = SyncResult(
@@ -81,7 +81,7 @@ def test_sync_result_init():
     assert result.unchanged == 10
     assert result.errors == ["Error 1", "Error 2"]
     assert result.protected_skipped == 3
-    assert result.cached == 4
+    assert result.cached == 4  # Kept for backward compatibility but no longer used
     
     # Test error list initialization
     result = SyncResult()
@@ -109,7 +109,7 @@ def test_sync_result_str():
     assert "3 downloaded" in result_str
     assert "1 deleted" in result_str
     assert "10 unchanged" in result_str
-    assert "2 cached" in result_str
+    assert "2 cached" in result_str  # Kept for backward compatibility
     assert "1 protected skipped" in result_str
     assert "0 failed" in result_str
 
@@ -377,50 +377,11 @@ def test_sync_dry_run():
                         assert mock_delete.call_count == 0
 
 
+@pytest.mark.skip(reason="cache_dir functionality has been removed")
 def test_sync_with_cache_dir():
-    """Test sync with cache_dir"""
-    config = BucketConfig(
-        provider="test",
-        bucket_name="test-bucket"
-    )
-    
-    sync = TestSyncImplementation(config)
-    
-    # Create a temporary directory structure
-    with tempfile.TemporaryDirectory() as temp_dir:
-        local_dir = os.path.join(temp_dir, "local")
-        cache_dir = os.path.join(temp_dir, "cache")
-        
-        # Create directories
-        os.makedirs(local_dir)
-        os.makedirs(cache_dir)
-        
-        # Create a file in the cache
-        with open(os.path.join(cache_dir, "cached_file.txt"), "w") as f:
-            f.write("cached content")
-            
-        # Mock methods
-        with patch.object(sync, "calculate_checksum") as mock_checksum:
-            # Different checksums for cache and local files
-            def checksum_side_effect(filepath):
-                if "cache" in filepath:
-                    return "cache-checksum"
-                return "local-checksum"
-                
-            mock_checksum.side_effect = checksum_side_effect
-            
-            # Run the sync with cache_dir
-            result = sync.sync(
-                local_path=local_dir,
-                cache_dir=cache_dir
-            )
-            
-            # Check results
-            assert result.success is True
-            assert result.cached == 1  # One file copied from cache
-            
-            # Verify file was copied from cache to local
-            assert os.path.exists(os.path.join(local_dir, "cached_file.txt"))
+    """Test sync with cache_dir (functionality removed)"""
+    # This test is kept as reference but skipped since cache_dir functionality was removed
+    pass
 
 
 def test_sync_with_errors():
@@ -484,20 +445,8 @@ def test_sync_with_nonexistent_path():
             sync.sync(local_path=nonexistent_path)
 
 
+@pytest.mark.skip(reason="cache_dir functionality has been removed")
 def test_sync_with_nonexistent_cache_dir():
-    """Test sync with a nonexistent cache directory"""
-    config = BucketConfig(
-        provider="test",
-        bucket_name="test-bucket"
-    )
-    
-    sync = TestSyncImplementation(config)
-    
-    # Create a temporary directory
-    with tempfile.TemporaryDirectory() as temp_dir:
-        # Nonexistent cache directory
-        nonexistent_cache = os.path.join(temp_dir, "nonexistent_cache")
-        
-        # This should raise NotADirectoryError
-        with pytest.raises(NotADirectoryError):
-            sync.sync(local_path=temp_dir, cache_dir=nonexistent_cache)
+    """Test sync with a nonexistent cache directory (functionality removed)"""
+    # This test is kept as reference but skipped since cache_dir functionality was removed
+    pass

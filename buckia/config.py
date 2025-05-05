@@ -21,9 +21,6 @@ class BucketConfig:
     # Authentication
     credentials: Dict[str, str] = field(default_factory=dict)  # Provider-specific credentials
     
-    # Cache settings
-    cache_dir: Optional[str] = None  # Local cache directory
-    
     # Sync settings
     sync_paths: List[str] = field(default_factory=list)  # Paths to sync (relative to local path)
     delete_orphaned: bool = False  # Whether to delete files on remote that don't exist locally
@@ -64,7 +61,6 @@ class BucketConfig:
             
         # Extract other settings
         credentials = config_data.get('auth', {})
-        cache_dir = config_data.get('cache_dir')
         
         # Extract sync settings
         sync_settings = config_data.get('sync', {})
@@ -79,14 +75,13 @@ class BucketConfig:
         
         # Any other provider-specific settings
         provider_settings = {k: v for k, v in config_data.items() 
-                            if k not in ('provider', 'bucket_name', 'auth', 'cache_dir', 
+                            if k not in ('provider', 'bucket_name', 'auth',
                                          'sync', 'checksum_algorithm', 'conflict_resolution', 'region')}
         
         return cls(
             provider=provider,
             bucket_name=bucket_name,
             credentials=credentials,
-            cache_dir=cache_dir,
             sync_paths=sync_paths,
             delete_orphaned=delete_orphaned,
             max_workers=max_workers,
@@ -106,7 +101,6 @@ class BucketConfig:
             'bucket_name': self.bucket_name,
             'auth': self.credentials,
             'region': self.region,
-            'cache_dir': self.cache_dir,
             'checksum_algorithm': self.checksum_algorithm,
             'conflict_resolution': self.conflict_resolution,
             'sync': {

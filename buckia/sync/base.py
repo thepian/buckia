@@ -31,7 +31,7 @@ class SyncResult:
     unchanged: int = 0
     errors: List[str] = None
     protected_skipped: int = 0
-    cached: int = 0
+    cached: int = 0  # Kept for backward compatibility but no longer used
     
     def __post_init__(self):
         if self.errors is None:
@@ -244,7 +244,6 @@ class BaseSync(ABC):
         delete_orphaned: bool = False,
         dry_run: bool = False,
         progress_callback: Optional[Callable] = None,
-        cache_dir: Optional[Path|str] = None,
         sync_paths: Optional[List[str]] = None,
         include_pattern: Optional[str] = None,
         exclude_pattern: Optional[str] = None
@@ -258,7 +257,6 @@ class BaseSync(ABC):
             delete_orphaned: Whether to delete files on remote that don't exist locally
             dry_run: If True, only report what would be done without making changes
             progress_callback: Callback function for reporting progress
-            cache_dir: Directory for local file cache that maps into the local tree
             sync_paths: Specific files/directories to sync (relative to local_path)
             include_pattern: Regex pattern for files to include
             exclude_pattern: Regex pattern for files to exclude
@@ -272,10 +270,6 @@ class BaseSync(ABC):
             
         # Normalize paths
         local_path = Path(local_path)
-        if cache_dir:
-            cache_dir = Path(cache_dir)
-            if not cache_dir.is_dir():
-                raise NotADirectoryError(f"Cache directory does not exist: {cache_dir}")
         
         # Normalize write protected paths
         protected_patterns = []
@@ -283,36 +277,6 @@ class BaseSync(ABC):
             protected_patterns = [str(Path(p)) for p in sync_paths]
                 
         result = SyncResult()
-        
-        # First handle cache directory if specified
-        if cache_dir and not dry_run:
-            self.logger.info(f"Processing cache directory: {cache_dir}")
-            cached_files = 0
-            
-            for root, _, files in os.walk(cache_dir):
-                for file in files:
-                    cache_file_path = Path(root) / file
-                    relative_path = cache_file_path.relative_to(cache_dir)
-                    target_path = local_path / relative_path
-                    
-                    # Skip if target is in write protected paths
-                    if protected_patterns and any(str(target_path).startswith(p) for p in protected_patterns):
-                        self.logger.debug(f"Skipping write-protected cached file: {relative_path}")
-                        result.protected_skipped += 1
-                        continue
-                    
-                    if not target_path.exists() or self.calculate_checksum(str(cache_file_path)) != self.calculate_checksum(str(target_path)):
-                        # Create target directory if it doesn't exist
-                        target_path.parent.mkdir(parents=True, exist_ok=True)
-                        
-                        # Copy file from cache to local path
-                        import shutil
-                        shutil.copy2(cache_file_path, target_path)
-                        cached_files += 1
-                        self.logger.debug(f"Copied cached file: {relative_path}")
-            
-            result.cached = cached_files
-            self.logger.info(f"Copied {cached_files} files from cache directory")
         
         # Get local files
         self.logger.info(f"Scanning local directory: {local_path}")

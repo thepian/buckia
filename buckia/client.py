@@ -104,7 +104,6 @@ class BuckiaClient:
             exclude_pattern=exclude_pattern,
             dry_run=dry_run,
             progress_callback=progress_callback,
-            cache_dir=self.config.cache_dir,
             sync_paths=sync_paths,
         )
         
