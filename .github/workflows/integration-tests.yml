@@ -18,24 +18,35 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
       # Don't fail fast so we get results from all versions
       fail-fast: false
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
-        cache: 'pip'
+    
+    - name: Install UV
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    
+    - name: Cache UV
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/uv
+          ~/.uv
+        key: ${{ runner.os }}-${{ matrix.python-version }}-uv-${{ hashFiles('setup.py') }}
     
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        # Install the package with test dependencies
-        pip install -e ".[dev,bunny]"
+        uv pip install -e ".[dev,bunny]"
+        uv pip install python-dotenv
     
     - name: Create test configuration
       run: |
@@ -58,7 +69,7 @@ jobs:
       run: |
         # Basic validation to ensure secrets are set
         # This will fail if secrets are not properly configured
-        python -c "import os, sys; \
+        uv run python -c "import os, sys; \
         missing = [k for k in ['BUNNY_API_KEY', 'BUNNY_STORAGE_API_KEY'] \
                   if not os.environ.get('SECRETS_' + k)]; \
         if missing: \
@@ -70,21 +81,21 @@ jobs:
     
     - name: Run basic tests
       run: |
-        pytest tests/integration/test_bunny.py tests/integration/test_operations.py -v
+        uv run -m pytest tests/integration/test_bunny.py tests/integration/test_operations.py -v
       env:
         BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
         BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
     
     - name: Run sync tests
       run: |
-        pytest tests/integration/test_sync.py -v
+        uv run -m pytest tests/integration/test_sync.py -v
       env:
         BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
         BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
     
     - name: Run error handling tests
       run: |
-        pytest tests/integration/test_error_handling.py -v
+        uv run -m pytest tests/integration/test_error_handling.py -v
       env:
         BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
         BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
@@ -92,7 +103,7 @@ jobs:
     - name: Run stress tests (if requested)
       if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_full_suite == 'true' }}
       run: |
-        pytest tests/integration/test_error_handling.py::test_network_throttling -v
+        uv run -m pytest tests/integration/test_error_handling.py::test_network_throttling -v
       env:
         BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
         BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}

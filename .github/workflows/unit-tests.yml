@@ -1,0 +1,46 @@
+name: Buckia Unit Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+      fail-fast: false
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install UV
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    
+    - name: Cache UV
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/uv
+          ~/.uv
+        key: ${{ runner.os }}-${{ matrix.python-version }}-uv-unit-${{ hashFiles('setup.py') }}
+    
+    - name: Install dependencies
+      run: |
+        uv pip install -e ".[dev,bunny]"
+        uv pip install python-dotenv
+    
+    - name: Run unit tests
+      run: |
+        uv run -m pytest tests/unit/ -v
