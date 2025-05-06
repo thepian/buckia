@@ -2,7 +2,6 @@ name: Publish to PyPI
 
 on:
   push:
-    branches: [ main ]
     tags:
       - 'v*'  # Push events to matching v*, i.e. v1.0, v20.15.10
   workflow_dispatch:
@@ -19,10 +18,11 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Needed for proper versioning with setuptools_scm
     
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -44,7 +44,23 @@ jobs:
       run: |
         uv run -m build
     
-    - name: Publish to PyPI
+    - name: Publish to Test PyPI
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.release_type == 'test'
+      env:
+        TWINE_USERNAME: ${{ secrets.TEST_PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_PASSWORD }}
+      run: |
+        uv run -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+    
+    - name: Publish to PyPI (from workflow dispatch)
+      if: github.event_name == 'workflow_dispatch' && github.event.inputs.release_type == 'production'
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      run: |
+        uv run -m twine upload dist/*
+    
+    - name: Publish to PyPI (from tag)
       if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}

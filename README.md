@@ -2,16 +2,15 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/buckia.svg)](https://pypi.org/project/buckia/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/buckia.svg)](https://pypi.org/project/buckia/)
-[![License](https://img.shields.io/github/license/evidently/buckia.svg)](https://github.com/evidently/buckia/blob/main/LICENSE)
-[![Unit Tests](https://github.com/evidently/buckia/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/evidently/buckia/actions/workflows/unit-tests.yml)
-[![Integration Tests](https://github.com/evidently/buckia/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/evidently/buckia/actions/workflows/integration-tests.yml)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Unit Tests](https://github.com/thepian/buckia/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/thepian/buckia/actions/workflows/unit-tests.yml)
+[![Integration Tests](https://github.com/thepian/buckia/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/thepian/buckia/actions/workflows/integration-tests.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 Manages a local cache matched by content in a remote cloud Storage Bucket.
 A local cache for files belonging to a single user is mirrored in a user specific directory in the Storage Bucket. It is intended to support mobile Apps that manage data locally, but need to secure it or share it by pushing a copy to the cloud.
 
 Buckia library provides a unified interface for interacting with multiple storage providers including Bunny.net, S3, and Linode. It is designed to simplify file synchronization, management, and access across different storage backends.
-
 
 ## APP Support (Swift/Kotlin)
 
@@ -21,11 +20,10 @@ Common Storage Bucket - Holds demo-team folder and common user folders.
 Premium Storage Bucket - Holds demo-team folder and premium user folders.
 Enterprise Storage Bucket (Dedicated) - Holds demo-team folder and enterprise user folders.
 
-The app creates a new User as needed with an UID. It syncs `<my-user-id>` folder to the Storage Bucket along with a copy of the local SQLite DB, if backup is enabled. 
+The app creates a new User as needed with an UID. It syncs `<my-user-id>` folder to the Storage Bucket along with a copy of the local SQLite DB, if backup is enabled.
 Locally it would be saved as a `<my-user-id>` folder under the local App Documents folder beside the App Specific SQLite DB.
 
 The App can reset all data by deleting user folder and cloning the SQLite DB from the demo-team folder. It can update to the latest demo data by sync'ing the `<demo-team-id>` folder, and applying the contents of the `App.sqlite` in the `<demo-team-id>` to the local user folder DB.
-
 
 ## CLI Support (Python)
 
@@ -36,7 +34,6 @@ The folder holds demo images and clips along with SQLite database `App.sqlite`.
 
 Other local `assets/backup/<user-id>` holds the contents of `<user-id>` in the Storage Bucket.
 The folder holds backups of content for a specific user.
-
 
 ## Synchronization Capabilities
 
@@ -55,9 +52,8 @@ Buckia sync supports a range of configuration options and deployment scenarios:
 - **Path mapping** - Flexible path translation between local and remote systems
 - **Directory structure preservation** - Maintain your exact directory structure in remote storage
 
-The local cache directory receives updates is used to sync bidirectionally. 
+The local cache directory receives updates is used to sync bidirectionally.
 Additional paths and files configured will be uploaded to the server as needed.
-
 
 ### Authentication and Connection Options
 
@@ -69,12 +65,14 @@ Additional paths and files configured will be uploaded to the server as needed.
 ### Provider-Specific Features
 
 - **Bunny.net specific**
+
   - Integration with Bunny.net's CDN and Pull Zones
   - Cache purging capabilities
   - Support for both Storage API and Edge Storage
   - Optional use of bunnycdnpython package or direct API calls
 
 - **S3 specific**
+
   - Support for AWS S3 and S3-compatible storage (MinIO, DigitalOcean Spaces)
   - Bucket policy and ACL management
   - Multipart uploads for large files
@@ -277,7 +275,7 @@ The top level of the configuration contains one or more bucket configurations, w
 ```yaml
 bucket-name-1:
   # Configuration for first bucket
-  
+
 bucket-name-2:
   # Configuration for second bucket
 ```
@@ -286,25 +284,25 @@ bucket-name-2:
 
 Each bucket configuration supports the following options:
 
-| Option | Description | Type | Required |
-|--------|-------------|------|----------|
-| `provider` | Storage provider type (`bunny`, `s3`, or `linode`) | String | Yes |
-| `bucket_name` | Name of the remote bucket/storage zone | String | Yes |
-| `domain` | Domain for the storage service | String | No |
-| `region` | Geographic region for the bucket | String | No |
-| `storage_zone` | Storage zone name (Bunny.net specific) | String | No |
-| `pull_zone` | Pull zone name (Bunny.net specific) | String | No |
-| `api_key` | API key for authentication | String | Yes* |
-| `storage_api_key` | Storage-specific API key (Bunny.net specific) | String | No |
-| `password` | Password for protected buckets | String | No |
-| `folders` | List of top-level folders to sync | Array | No |
-| `paths` | Local paths to sync with the bucket | Array | No |
-| `files` | Map of local file paths to remote paths for bidirectional sync | Object | No |
-| `upload_files` | Map of local file paths to remote paths for upload-only sync | Object | No |
-| `delete_orphaned` | Whether to delete remote files that don't exist locally | Boolean | No |
-| `max_workers` | Maximum number of concurrent operations | Integer | No |
-| `checksum_algorithm` | Algorithm for file checksums (`sha256`, `md5`, etc.) | String | No |
-| `conflict_resolution` | How to resolve conflicts (`local_wins`, `remote_wins`, `newest_wins`, `ask`) | String | No |
+| Option                | Description                                                                  | Type    | Required |
+| --------------------- | ---------------------------------------------------------------------------- | ------- | -------- |
+| `provider`            | Storage provider type (`bunny`, `s3`, or `linode`)                           | String  | Yes      |
+| `bucket_name`         | Name of the remote bucket/storage zone                                       | String  | Yes      |
+| `domain`              | Domain for the storage service                                               | String  | No       |
+| `region`              | Geographic region for the bucket                                             | String  | No       |
+| `storage_zone`        | Storage zone name (Bunny.net specific)                                       | String  | No       |
+| `pull_zone`           | Pull zone name (Bunny.net specific)                                          | String  | No       |
+| `api_key`             | API key for authentication                                                   | String  | Yes\*    |
+| `storage_api_key`     | Storage-specific API key (Bunny.net specific)                                | String  | No       |
+| `password`            | Password for protected buckets                                               | String  | No       |
+| `folders`             | List of top-level folders to sync                                            | Array   | No       |
+| `paths`               | Local paths to sync with the bucket                                          | Array   | No       |
+| `files`               | Map of local file paths to remote paths for bidirectional sync               | Object  | No       |
+| `upload_files`        | Map of local file paths to remote paths for upload-only sync                 | Object  | No       |
+| `delete_orphaned`     | Whether to delete remote files that don't exist locally                      | Boolean | No       |
+| `max_workers`         | Maximum number of concurrent operations                                      | Integer | No       |
+| `checksum_algorithm`  | Algorithm for file checksums (`sha256`, `md5`, etc.)                         | String  | No       |
+| `conflict_resolution` | How to resolve conflicts (`local_wins`, `remote_wins`, `newest_wins`, `ask`) | String  | No       |
 
 \* Authentication method required, but varies by provider
 
@@ -313,11 +311,9 @@ Each bucket configuration supports the following options:
 - **paths**: List of local paths to sync bidirectionally with the bucket
   - The first entry in the `paths` list will receive incoming changes from the bucket
   - All entries in the `paths` list will be uploaded to the bucket as needed
-  
 - **files**: Map of specific files for bidirectional synchronization
   - Key: Local file path
   - Value: Remote file path in the bucket
-  
 - **upload_files**: Map of files for upload-only synchronization
   - Key: Local file path
   - Value: Remote file path in the bucket
@@ -335,22 +331,22 @@ common-assets:
   # Authentication
   api_key: YOUR_API_KEY
   storage_api_key: YOUR_STORAGE_API_KEY
-  password: YOUR_PASSWORD  # Optional for password-protected buckets
+  password: YOUR_PASSWORD # Optional for password-protected buckets
 
   # Folders to sync (top-level directories in the bucket)
   folders:
-  - 123-456-789-ABC
+    - 123-456-789-ABC
 
   # Sync settings
   paths:
-    - demo/        # Will receive incoming changes from the bucket
+    - demo/ # Will receive incoming changes from the bucket
     - static/data/ # Will be uploaded to the bucket
   delete_orphaned: true
   max_workers: 8
 
   # Advanced settings
   checksum_algorithm: sha256
-  conflict_resolution: local_wins  # Options: local_wins, remote_wins, newest_wins, ask
+  conflict_resolution: local_wins # Options: local_wins, remote_wins, newest_wins, ask
 ```
 
 In this example, changes to files in the `demo/` directory will be synchronized bidirectionally with the bucket, while files in `static/data/` will be uploaded to the bucket but remote changes won't be downloaded to this directory.
@@ -370,7 +366,6 @@ Document App Data Logic
 
 CLI folder data logic
 
-
 ## Implementation Details
 
 ### Sync Process
@@ -387,6 +382,7 @@ The sync process follows these steps:
 ### File Tracking
 
 Files are tracked using:
+
 - File paths (relative to root directory)
 - Content checksums (SHA-256 by default)
 - Modification timestamps
@@ -401,6 +397,7 @@ The library currently includes implementations for:
 - **Linode**: Placeholder implementation (skeleton)
 
 To add a new backend:
+
 1. Create a new class that inherits from `BaseSync`
 2. Implement all required methods from the base class
 3. Add the backend to the factory in `sync/factory.py`
@@ -458,6 +455,7 @@ Integration tests run through the Buckia features against a test bucket that is 
 Unit testing done where significant functionality is present in the code.
 
 Test suite includes:
+
 - Unit tests for core functionality
 - Integration tests with mock storage backends
 - End-to-end tests with real storage providers

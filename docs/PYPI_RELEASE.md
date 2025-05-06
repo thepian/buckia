@@ -14,17 +14,18 @@ Before publishing to PyPI, ensure you have the following:
 
 ## Update Package Information
 
-1. Ensure your package information in `setup.py` is accurate:
-   - Update author name and email
-   - Update GitHub repository URL (replace `yourusername` with your actual GitHub username)
+1. Ensure your package information in `pyproject.toml` is accurate:
+   - Check author name and email
+   - Verify GitHub repository URL in the project.urls section
    - Verify package classifiers are correct
+   - Ensure all dependencies are correctly specified
 
 2. Update the version number in `buckia/__init__.py`:
    ```python
    __version__ = "0.x.x"  # Replace with your version
    ```
 
-3. Update the `CHANGELOG.md` to document changes in the new version.
+3. Update the `docs/CHANGELOG.md` to document changes in the new version.
 
 ## Build Distribution Packages
 

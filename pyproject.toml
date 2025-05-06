@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm>=6.2", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "buckia"
+description = "Multi-platform, multi-backend storage bucket synchronization"
+readme = "README.md"
+authors = [
+    {name = "Henrik Vendelbo", email = "hvendelbo+pypi@gmail.com"}
+]
+requires-python = ">=3.10"
+keywords = ["storage", "bucket", "sync", "bunny", "s3", "linode"]
+license = {text = "AGPL-3.0"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Archiving :: Backup",
+    "Topic :: System :: Archiving :: Mirroring",
+]
+dependencies = [
+    "requests>=2.25.0",
+    "pyyaml>=5.4.0",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+bunny = ["bunnycdnpython>=0.0.8"]
+s3 = ["boto3>=1.17.0"]
+linode = ["linode-api4>=5.0.0"]
+dev = [
+    "pytest>=6.2.0",
+    "pytest-cov>=2.10.1",
+    "pytest-env>=0.8.1",
+    "pytest-timeout>=2.1.0",
+    "pytest-dotenv>=0.5.2",
+    "black>=23.12.1",
+    "flake8>=7.0.0",
+    "mypy>=1.15.0",
+    "pre-commit>=3.5.0",
+    "isort>=5.13.2",
+    "types-PyYAML",
+    "types-requests",
+]
+
+[project.urls]
+Homepage = "https://github.com/thepian/buckia"
+Repository = "https://github.com/thepian/buckia"
+Issues = "https://github.com/thepian/buckia/issues"
+
+[project.scripts]
+buckia = "buckia.cli:main"
+
+[tool.setuptools]
+packages = ["buckia", "buckia.sync", "buckia.sync.bunnycdn"]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {attr = "buckia.__version__"}
+
+# MyPy configuration
+[tool.mypy]
+python_version = "3.10"
+warn_redundant_casts = true
+disallow_any_generics = true
+disallow_untyped_defs = true
+warn_unused_ignores = true
+check_untyped_defs = true
+no_implicit_optional = true
+
+# Black configuration 
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+# isort configuration
+[tool.isort]
+profile = "black"
+line_length = 100
