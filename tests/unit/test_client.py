@@ -30,14 +30,15 @@ class MockBackend:
     def sync(self, **kwargs):
         """Mock sync operation"""
         from buckia.sync.base import SyncResult
+
         return SyncResult(
             success=True,
-            uploaded=5, 
+            uploaded=5,
             downloaded=3,
             deleted=1,
             unchanged=10,
             failed=0,
-            errors=[]
+            errors=[],
         )
 
     def upload_file(self, local_file_path, remote_path):

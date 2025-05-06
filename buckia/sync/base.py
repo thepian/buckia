@@ -363,7 +363,7 @@ class BaseSync(ABC):
             result.downloaded = len(to_download)
             if delete_orphaned:
                 result.deleted = len(to_delete)
-            
+
             self.logger.info(f"DRY RUN: Would upload {result.uploaded} files")
             if delete_orphaned:
                 self.logger.info(f"DRY RUN: Would delete {result.deleted} files")

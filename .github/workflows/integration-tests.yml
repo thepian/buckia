@@ -69,17 +69,11 @@ jobs:
     
     - name: Validate credentials
       run: |
-        # Basic validation to ensure secrets are set
-        # This will fail if secrets are not properly configured
-        uv run python -c "import os, sys; \
-        missing = [k for k in ['BUNNY_API_KEY', 'BUNNY_STORAGE_API_KEY'] \
-                  if not os.environ.get('SECRETS_' + k)]; \
-        if missing: \
-            print(f'Error: Missing required secrets: {missing}', file=sys.stderr); \
-            sys.exit(1);"
+        # Run the dedicated secret validation script
+        uv run python ./scripts/validate_secrets.py
       env:
-        SECRETS_BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
-        SECRETS_BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
+        BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
+        BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
     
     - name: Run basic tests
       run: |
