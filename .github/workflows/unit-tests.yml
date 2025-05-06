@@ -3,8 +3,16 @@ name: Buckia Unit Tests
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'buckia/**'
+      - 'tests/**'
+      - '.github/workflows/unit-tests.yml'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'buckia/**'
+      - 'tests/**'
+      - '.github/workflows/unit-tests.yml'
   workflow_dispatch:
 
 jobs:

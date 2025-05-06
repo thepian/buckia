@@ -3,8 +3,16 @@ name: Buckia Integration Tests
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'buckia/**'
+      - 'tests/**'
+      - '.github/workflows/integration-tests.yml'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'buckia/**'
+      - 'tests/**'
+      - '.github/workflows/integration-tests.yml'
   workflow_dispatch:
     inputs:
       run_full_suite:
