@@ -20,7 +20,6 @@ def test_bucket_config_init():
     assert config.provider == "test-provider"
     assert config.bucket_name == "test-bucket"
     assert config.credentials == {}
-    # cache_dir removed
     assert config.sync_paths == []
     assert config.delete_orphaned is False
     assert config.max_workers == 4
@@ -52,7 +51,6 @@ def test_bucket_config_init_with_all_params():
     assert config.provider == "test-provider"
     assert config.bucket_name == "test-bucket"
     assert config.credentials == credentials
-    # cache_dir attribute removed
     assert config.sync_paths == sync_paths
     assert config.delete_orphaned is True
     assert config.max_workers == 8

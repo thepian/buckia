@@ -357,13 +357,6 @@ def test_sync_dry_run():
                         assert mock_delete.call_count == 0
 
 
-@pytest.mark.skip(reason="cache_dir functionality has been removed")
-def test_sync_with_cache_dir():
-    """Test sync with cache_dir (functionality removed)"""
-    # This test is kept as reference but skipped since cache_dir functionality was removed
-    pass
-
-
 def test_sync_with_errors():
     """Test sync with errors in operations"""
     config = BucketConfig(provider="test", bucket_name="test-bucket")
@@ -413,10 +406,3 @@ def test_sync_with_nonexistent_path():
         # This should raise NotADirectoryError
         with pytest.raises(NotADirectoryError):
             sync.sync(local_path=nonexistent_path)
-
-
-@pytest.mark.skip(reason="cache_dir functionality has been removed")
-def test_sync_with_nonexistent_cache_dir():
-    """Test sync with a nonexistent cache directory (functionality removed)"""
-    # This test is kept as reference but skipped since cache_dir functionality was removed
-    pass

@@ -358,10 +358,16 @@ class BaseSync(ABC):
 
         # Report what would be done in dry run mode
         if dry_run:
-            self.logger.info(f"DRY RUN: Would upload {len(to_upload)} files")
+            # Update counts to reflect what would happen in a real sync
+            result.uploaded = len(to_upload)
+            result.downloaded = len(to_download)
             if delete_orphaned:
-                self.logger.info(f"DRY RUN: Would delete {len(to_delete)} files")
-            self.logger.info(f"DRY RUN: Would download {len(to_download)} files")
+                result.deleted = len(to_delete)
+            
+            self.logger.info(f"DRY RUN: Would upload {result.uploaded} files")
+            if delete_orphaned:
+                self.logger.info(f"DRY RUN: Would delete {result.deleted} files")
+            self.logger.info(f"DRY RUN: Would download {result.downloaded} files")
             self.logger.info(f"DRY RUN: Would leave {result.unchanged} files unchanged")
             self.logger.info(
                 f"DRY RUN: Would skip {result.protected_skipped} write-protected files"

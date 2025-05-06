@@ -29,15 +29,16 @@ class MockBackend:
 
     def sync(self, **kwargs):
         """Mock sync operation"""
-        return {
-            "success": True,
-            "uploaded": 5,
-            "downloaded": 3,
-            "deleted": 1,
-            "unchanged": 10,
-            "failed": 0,
-            "errors": [],
-        }
+        from buckia.sync.base import SyncResult
+        return SyncResult(
+            success=True,
+            uploaded=5, 
+            downloaded=3,
+            deleted=1,
+            unchanged=10,
+            failed=0,
+            errors=[]
+        )
 
     def upload_file(self, local_file_path, remote_path):
         """Mock upload operation"""
@@ -206,9 +207,9 @@ def test_client_sync():
         result = client.sync("/tmp/test")
 
         # Check result was returned
-        assert result["success"] is True
-        assert result["uploaded"] == 5
-        assert result["downloaded"] == 3
+        assert result.success is True
+        assert result.uploaded == 5
+        assert result.downloaded == 3
 
         # Test sync with overrides
         result = client.sync(
@@ -222,7 +223,7 @@ def test_client_sync():
         )
 
         # Check result was returned
-        assert result["success"] is True
+        assert result.success is True
 
 
 def test_client_test_connection():

@@ -369,7 +369,6 @@ def test_cmd_init_success(mock_exists, mock_bucket_config_class, capsys):
     args.provider = "bunny"
     args.bucket_name = "test-bucket"
     args.api_key = "test-key"
-    args.cache_dir = "/cache/dir"
     args.paths = ["path1", "path2"]
     args.delete_orphaned = True
     args.region = "us-east-1"
@@ -385,7 +384,6 @@ def test_cmd_init_success(mock_exists, mock_bucket_config_class, capsys):
         provider="bunny",
         bucket_name="test-bucket",
         credentials={"api_key": "test-key"},
-        cache_dir="/cache/dir",
         sync_paths=["path1", "path2"],
         delete_orphaned=True,
         region="us-east-1",
@@ -438,7 +436,6 @@ def test_cmd_init_file_exists_with_force(mock_exists, mock_bucket_config_class):
     args.provider = "bunny"
     args.bucket_name = "test-bucket"
     args.api_key = "test-key"
-    args.cache_dir = None
     args.paths = None
     args.delete_orphaned = False
     args.region = None

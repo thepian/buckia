@@ -161,14 +161,22 @@ To run the test suite:
 
 ```bash
 # Run all tests
-pytest
+uv run scripts/run_tests.sh
+
+# Run only unit tests
+uv run scripts/run_tests.sh tests/unit
+
+# Run integration tests
+uv run -m pytest tests/integration/
 
 # Run with coverage report
-pytest --cov=buckia
+uv run -m pytest --cov=buckia
 
 # Run specific tests
-pytest tests/test_specific_module.py
+uv run -m pytest tests/test_specific_module.py
 ```
+
+For more detailed information about testing, including test options and troubleshooting, see [TESTING.md](TESTING.md).
 
 ### Building Documentation
 

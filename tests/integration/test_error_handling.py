@@ -5,7 +5,6 @@ Integration tests for error handling and edge cases
 import os
 import tempfile
 import time
-from pathlib import Path
 
 import pytest
 
@@ -76,8 +75,12 @@ def test_nonexistent_bucket():
 
     # Test connection should fail for the bucket
     connection_results = client.test_connection()
-    assert not all(
-        connection_results.values()
+    # assert not all(
+    #     connection_results.values()
+    # ), "Connection should fail with nonexistent bucket"
+    assert (
+        connection_results["api_key"] is False
+        and connection_results["password"] is False
     ), "Connection should fail with nonexistent bucket"
 
     # Attempts to perform operations should fail gracefully

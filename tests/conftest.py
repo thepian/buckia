@@ -6,6 +6,7 @@ import os
 import tempfile
 import time
 import uuid
+import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator
 
@@ -14,6 +15,13 @@ import yaml
 from dotenv import load_dotenv
 
 from buckia import BucketConfig, BuckiaClient
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, 
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger("buckia.test")
 
 # Load environment variables from .env file if it exists
 # Only load variables that are not already set in the environment
@@ -43,6 +51,11 @@ def pytest_addoption(parser):
         "--skip-cleanup",
         action="store_true",
         help="Skip cleaning up test data after tests",
+    )
+    parser.addoption(
+        "--preserve-remote",
+        action="store_true",
+        help="Preserve remote files and directories for debugging",
     )
 
 
@@ -205,32 +218,84 @@ def test_directory_factory(
     return _create_directory
 
 
+@pytest.fixture(scope="function", autouse=True)
+def test_setup_teardown(request):
+    """Setup and teardown for each test"""
+    # Setup - Log test start
+    test_name = request.node.name
+    module_name = request.node.module.__name__
+    
+    logger.info(f"Starting test: {module_name}::{test_name}")
+    
+    # Run the test
+    yield
+    
+    # Teardown - Log test end
+    logger.info(f"Completed test: {module_name}::{test_name}")
+
+
 @pytest.fixture(scope="function")
-def remote_test_prefix() -> str:
+def remote_test_prefix(request) -> str:
     """Generate a unique prefix for remote test files"""
-    return f"buckia_test_{TEST_RUN_ID}"
+    # Create a unique ID for each test by combining the global ID with the test name
+    test_name_hash = str(hash(request.node.name) % 10000).zfill(4)
+    test_id = f"buckia_test_{TEST_RUN_ID}_{test_name_hash}"
+    
+    # Log the test prefix
+    logger.info(f"Test '{request.node.name}' using remote prefix: {test_id}")
+    return test_id
 
 
 @pytest.fixture(scope="function")
 def cleanup_remote_files(
     request, buckia_client, remote_test_prefix
 ) -> Callable[[], None]:
-    """Delete test files from remote storage after test"""
+    """Delete test files and directories from remote storage after test"""
 
     def _cleanup():
-        """Delete all files with the test prefix"""
+        """Delete all files and directories with the test prefix"""
+        # Check cleanup options
         skip_cleanup = request.config.getoption("--skip-cleanup")
-        if skip_cleanup:
-            print(
-                f"\nSkipping cleanup of remote files with prefix: {remote_test_prefix}"
-            )
+        preserve_remote = request.config.getoption("--preserve-remote")
+        
+        if skip_cleanup or preserve_remote:
+            logger.info(f"Preserving remote files with prefix: {remote_test_prefix}")
             return
 
-        print(f"\nCleaning up remote files with prefix: {remote_test_prefix}")
+        # Find all files with the test prefix
         remote_files = buckia_client.list_files()
-        for remote_path in list(remote_files.keys()):
-            if remote_path.startswith(remote_test_prefix):
+        test_files = [path for path in remote_files.keys() if path.startswith(remote_test_prefix)]
+        
+        if test_files:
+            logger.info(f"Cleaning up {len(test_files)} remote files with prefix: {remote_test_prefix}")
+            
+            # Sort paths by length in descending order to delete deeper paths first
+            # This helps ensure we clean up nested directories properly
+            for remote_path in sorted(test_files, key=len, reverse=True):
                 buckia_client.delete_file(remote_path)
+            
+            # After deleting all files, try to delete any empty directories
+            # Extract unique directory paths from file paths
+            dirs_to_clean = set()
+            for file_path in test_files:
+                # Extract directory components
+                path_parts = file_path.split('/')
+                for i in range(1, len(path_parts)):
+                    dir_path = '/'.join(path_parts[:i])
+                    if dir_path.startswith(remote_test_prefix):
+                        dirs_to_clean.add(dir_path)
+            
+            # Delete directories from deepest to shallowest
+            if dirs_to_clean:
+                logger.info(f"Attempting to clean up {len(dirs_to_clean)} directories")
+                for dir_path in sorted(dirs_to_clean, key=len, reverse=True):
+                    try:
+                        buckia_client.delete_file(dir_path)
+                    except Exception as e:
+                        # Ignore errors when deleting directories
+                        logger.debug(f"Could not delete directory {dir_path}: {str(e)}")
+        else:
+            logger.info(f"No remote files found with prefix: {remote_test_prefix}")
 
     # Register cleanup to run after test
     request.addfinalizer(_cleanup)
