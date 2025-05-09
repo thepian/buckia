@@ -11,27 +11,58 @@ from typing import Any, Dict, List
 
 import requests
 
+from ..config import BucketConfig
+
+# Import TokenManager for API token management
+from ..security import TokenManager
 from .base import BaseSync
 
 # Configure logging
 logger = logging.getLogger("buckia.bunny")
 
+# Import from bundled copy or try system installation
+try:
+    from .bunnycdn.CDN import CDN  # type: ignore
+    from .bunnycdn.Storage import Storage  # type: ignore
+
+    use_bundled = True
+except ImportError:
+    # Try system installation
+    from BunnyCDN.Storage import Storage  # type: ignore
+
+    use_bundled = False
+
+logger.info(f"Using {'bundled' if use_bundled else 'system'} bunnycdnpython package")
+
 
 class BunnySync(BaseSync):
     """Synchronization backend for Bunny.net storage"""
 
-    def __init__(self, config):
+    config: BucketConfig
+
+    def __init__(self, config: dict[str, Any] | BucketConfig):
         """Initialize the Bunny.net backend with configuration"""
         super().__init__(config)
 
         # Extract Bunny-specific settings
         self.storage_zone_name = getattr(self.config, "bucket_name", None)
-        self.api_key = self.config.get_credential("api_key")
-        self.storage_api_key = self.config.get_credential("storage_api_key")
-        self.password = self.config.get_credential("password")
-        self.hostname = self.config.get_provider_setting(
-            "hostname", "storage.bunnycdn.com"
-        )
+        self.api_key = None
+        self.password = None
+
+        # If API key is missing, try to get from TokenManager
+        self.storage_api_key = None
+        try:
+            # Get bucket context name (default to provider name)
+            context = getattr(self.config, "token_context", None) or "bunny"
+            token_manager = TokenManager(namespace="buckia")  # TODO namespace config
+            token = token_manager.get_token(context)
+            if token:
+                logger.info(f"Using API key from token manager for bucket context: {context}")
+                self.storage_api_key = token
+        except Exception as e:
+            logger.warning(f"Failed to get token from keyring: {e}")
+
+        self.hostname = self.config.get_provider_setting("hostname", "storage.bunnycdn.com")
         self.storage_region = getattr(self.config, "region", "")
         self.authenticated_cdn_endpoint = self.config.get_provider_setting(
             "authenticated_cdn_endpoint"
@@ -41,38 +72,15 @@ class BunnySync(BaseSync):
 
         # Initialize session
         self.session = requests.Session()
-        # Use storage_api_key for storage operations if available, otherwise fall back to api_key
-        if self.storage_api_key:
-            self.session.headers.update(
-                {"AccessKey": self.storage_api_key, "Accept": "application/json"}
-            )
-        elif self.api_key:
-            self.session.headers.update(
-                {"AccessKey": self.api_key, "Accept": "application/json"}
-            )
+        token = self.storage_api_key or self.api_key
+        if token:
+            self.session.headers.update({"AccessKey": token, "Accept": "application/json"})
 
         # Always initialize bunnycdnpython client if available
         self.bunny_client = None
 
         # Try to import bunnycdnpython package
         try:
-            # Import from bundled copy or try system installation
-            try:
-                from .bunnycdn.CDN import CDN  # type: ignore
-                from .bunnycdn.Storage import Storage  # type: ignore
-
-                use_bundled = True
-            except ImportError:
-                # Try system installation
-                from BunnyCDN.CDN import CDN  # type: ignore
-                from BunnyCDN.Storage import Storage  # type: ignore
-
-                use_bundled = False
-
-            logger.info(
-                f"Using {'bundled' if use_bundled else 'system'} bunnycdnpython package"
-            )
-
             if self.storage_api_key:
                 # Initialize Storage with the correct parameter order
                 storage_region = self.storage_region if self.storage_region else ""
@@ -81,14 +89,10 @@ class BunnySync(BaseSync):
                 )
                 logger.debug("Initialized bunnycdnpython client")
             else:
-                logger.warning(
-                    "storage_api_key not provided, cannot use bunnycdnpython package"
-                )
+                logger.warning("storage_api_key not provided, cannot use bunnycdnpython package")
 
         except ImportError:
-            logger.warning(
-                "bunnycdnpython package not available, falling back to direct API calls"
-            )
+            logger.warning("bunnycdnpython package not available, falling back to direct API calls")
 
         except Exception as e:
             logger.error(f"Failed to initialize bunnycdnpython client: {str(e)}")
@@ -101,9 +105,7 @@ class BunnySync(BaseSync):
                 # Test using bunnycdnpython client
                 try:
                     self.bunny_client.GetStoragedObjectsList()
-                    logger.debug(
-                        "Successfully connected to Bunny.net API using bunnycdnpython"
-                    )
+                    logger.debug("Successfully connected to Bunny.net API using bunnycdnpython")
                     return True
                 except Exception as e:
                     logger.error(f"bunnycdnpython connection error: {str(e)}")
@@ -147,9 +149,7 @@ class BunnySync(BaseSync):
 
             # Create headers with the storage_api_key for the storage API test
             headers = {
-                "AccessKey": (
-                    self.storage_api_key if self.storage_api_key else self.api_key
-                ),
+                "AccessKey": (self.storage_api_key if self.storage_api_key else self.api_key),
                 "Accept": "application/json",
             }
 
@@ -204,9 +204,7 @@ class BunnySync(BaseSync):
 
                     # Handle None values in files list
                     if files is None:
-                        logger.warning(
-                            f"GetStoragedObjectsList returned None for path '{path}'"
-                        )
+                        logger.warning(f"GetStoragedObjectsList returned None for path '{path}'")
                         files = []
 
                     for item in files:
@@ -224,15 +222,11 @@ class BunnySync(BaseSync):
 
                             if is_dir:
                                 # Recursively get files from subdirectory
-                                subdir_path = (
-                                    f"{path}/{object_name}" if path else object_name
-                                )
+                                subdir_path = f"{path}/{object_name}" if path else object_name
                                 subdirectory_files = self.list_remote_files(subdir_path)
                                 remote_files.update(subdirectory_files)
                             else:
-                                file_path: str = (
-                                    f"{path}/{object_name}" if path else object_name
-                                )
+                                file_path: str = f"{path}/{object_name}" if path else object_name
                                 # Create basic metadata from the string
                                 remote_files[file_path] = {
                                     "ObjectName": object_name,
@@ -250,9 +244,7 @@ class BunnySync(BaseSync):
                                 is_directory = item.get("IsDirectory", False)
                             elif "Folder_Name" in item:
                                 object_name = item["Folder_Name"]
-                                is_directory = (
-                                    True  # If it has Folder_Name, it's a directory
-                                )
+                                is_directory = True  # If it has Folder_Name, it's a directory
                             elif "File_Name" in item:
                                 object_name = item["File_Name"]
                                 is_directory = False
@@ -260,22 +252,14 @@ class BunnySync(BaseSync):
                             if object_name:
                                 if is_directory:
                                     # Recursively get files from subdirectory
-                                    subdir_path = (
-                                        f"{path}/{object_name}" if path else object_name
-                                    )
-                                    subdirectory_files = self.list_remote_files(
-                                        subdir_path
-                                    )
+                                    subdir_path = f"{path}/{object_name}" if path else object_name
+                                    subdirectory_files = self.list_remote_files(subdir_path)
                                     remote_files.update(subdirectory_files)
                                 else:
-                                    file_path = (
-                                        f"{path}/{object_name}" if path else object_name
-                                    )
+                                    file_path = f"{path}/{object_name}" if path else object_name
                                     remote_files[file_path] = item
                             else:
-                                logger.warning(
-                                    f"Skipping item with unknown name format: {item}"
-                                )
+                                logger.warning(f"Skipping item with unknown name format: {item}")
                 except Exception as e:
                     logger.error(
                         f"Error with bunnycdnpython GetStoragedObjectsList for path '{path}': {str(e)}"
@@ -297,9 +281,7 @@ class BunnySync(BaseSync):
             response = self.session.get(url)
 
             if response.status_code != 200:
-                logger.error(
-                    f"Failed to list remote files: {response.status_code} {response.text}"
-                )
+                logger.error(f"Failed to list remote files: {response.status_code} {response.text}")
                 return remote_files
 
             items = response.json()
@@ -408,9 +390,7 @@ class BunnySync(BaseSync):
 
                 # Download to the correct location
                 self.bunny_client.DownloadFile(remote_path, local_file_path)
-                logger.info(
-                    f"Successfully downloaded with bunnycdnpython: {remote_path}"
-                )
+                logger.info(f"Successfully downloaded with bunnycdnpython: {remote_path}")
                 return True
             except Exception as e:
                 logger.error(f"Error downloading with bunnycdnpython: {str(e)}")
@@ -434,9 +414,7 @@ class BunnySync(BaseSync):
             url = f"{self.storage_api_url}/{self.storage_zone_name}/{remote_path}"
             # Use storage_api_key if available, otherwise fall back to api_key
             headers = {
-                "AccessKey": (
-                    self.storage_api_key if self.storage_api_key else self.api_key
-                )
+                "AccessKey": (self.storage_api_key if self.storage_api_key else self.api_key)
             }
 
         try:

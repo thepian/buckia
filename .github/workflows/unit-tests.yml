@@ -48,7 +48,7 @@ jobs:
       run: |
         # Create virtual environment and install dependencies
         uv venv
-        uv pip install -e ".[dev,bunny]"
+        uv pip install -e ".[dev,bunny,b2]"
         uv pip install python-dotenv
     
     - name: Run unit tests

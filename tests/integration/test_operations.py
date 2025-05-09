@@ -3,11 +3,18 @@ Integration tests for common file operations across providers
 """
 
 import os
+from pathlib import Path
+from typing import Callable, Dict
+
+from buckia import BuckiaClient
 
 
 def test_file_upload_download(
-    buckia_client, test_file_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: BuckiaClient,
+    test_file_factory: Callable[[str, int], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test basic file upload and download operations"""
     # Create test files of different sizes
     test_files = {
@@ -16,8 +23,8 @@ def test_file_upload_download(
         "large.txt": 1024 * 1024,  # 1 MB
     }
 
-    local_files = {}
-    remote_paths = {}
+    local_files: Dict[str, Path] = {}
+    remote_paths: Dict[str, str] = {}
 
     # Upload test files
     for name, size in test_files.items():
@@ -46,9 +53,7 @@ def test_file_upload_download(
         download_path = local_file.with_suffix(".downloaded")
 
         # Download the file
-        download_result = buckia_client.download_file(
-            remote_paths[name], str(download_path)
-        )
+        download_result = buckia_client.download_file(remote_paths[name], str(download_path))
         assert download_result, f"Download failed for {name}"
 
         # Verify file size
@@ -64,8 +69,11 @@ def test_file_upload_download(
 
 
 def test_file_listing(
-    buckia_client, test_file_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: BuckiaClient,
+    test_file_factory: Callable[[str, int], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test file listing operations"""
     # Upload a few files with the same prefix
     prefixed_files = [
@@ -94,9 +102,7 @@ def test_file_listing(
     # Check that we only get files under the specified path
     for remote_path in prefixed_files:
         if remote_path.startswith(f"{list_path}/"):
-            assert (
-                remote_path in list_result
-            ), f"File {remote_path} not found in path-based listing"
+            assert remote_path in list_result, f"File {remote_path} not found in path-based listing"
 
     # Delete test files
     for remote_path in prefixed_files:
@@ -104,8 +110,11 @@ def test_file_listing(
 
 
 def test_file_operations_with_special_characters(
-    buckia_client, test_file_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: BuckiaClient,
+    test_file_factory: Callable[[str, int], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test file operations with special characters in filenames"""
     # Test files with special characters
     special_files = {
@@ -115,8 +124,8 @@ def test_file_operations_with_special_characters(
         "file.with.dots.txt": 1024,
     }
 
-    local_files = {}
-    remote_paths = {}
+    local_files: Dict[str, Path] = {}
+    remote_paths: Dict[str, str] = {}
 
     # Upload test files
     for name, size in special_files.items():
@@ -145,9 +154,7 @@ def test_file_operations_with_special_characters(
         download_path = local_file.with_suffix(".downloaded")
 
         # Download the file
-        download_result = buckia_client.download_file(
-            remote_paths[name], str(download_path)
-        )
+        download_result = buckia_client.download_file(remote_paths[name], str(download_path))
         assert download_result, f"Download failed for {name}"
 
         # Verify file size
@@ -163,8 +170,11 @@ def test_file_operations_with_special_characters(
 
 
 def test_binary_file_operations(
-    buckia_client, temp_directory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: BuckiaClient,
+    temp_directory: Path,
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test operations with binary files"""
     # Create a binary file (small image)
     binary_file_path = temp_directory / "test_image.png"

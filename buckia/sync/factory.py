@@ -34,7 +34,7 @@ def create_sync_backend(
         if provider == "bunny":
             # Try to import BunnySync backend
             try:
-                from .bunny import BunnySync
+                from .bunny import BunnySync  # type: ignore
 
                 return BunnySync(config)
             except ImportError:
@@ -59,6 +59,16 @@ def create_sync_backend(
                 return LinodeSync(config)
             except ImportError:
                 logger.error("Failed to import LinodeSync backend")
+                return None
+
+        elif provider == "b2":
+            # Try to import B2Sync backend
+            try:
+                from .b2 import B2Sync  # type: ignore
+
+                return B2Sync(config)
+            except ImportError as e:
+                logger.error(f"Failed to import B2Sync backend, {e}")
                 return None
 
         else:

@@ -1,0 +1,14 @@
+{
+    "include": [
+        "buckia"
+    ],
+    "executionEnvironments": [
+        {
+            "root": "buckia",
+            "extraPaths": [
+                "."
+            ]
+        }
+    ],
+    "typeCheckingMode": "basic"
+}

@@ -8,25 +8,7 @@ For local development, credentials should be stored in a configuration file that
 
 ### Setting Up Local Credentials
 
-1. Copy the example configuration file:
-   ```bash
-   cp tests/config/test_config.yaml.example tests/config/test_config.yaml
-   ```
-
-2. Edit `test_config.yaml` with your real API credentials:
-   ```yaml
-   provider: bunny
-   bucket_name: your-test-storage-zone
-   auth:
-     api_key: your-api-key
-     storage_api_key: your-storage-api-key
-   ```
-
-3. Ensure this file is in your `.gitignore` to prevent accidental commits:
-   ```
-   # .gitignore
-   tests/config/test_config.yaml
-   ```
+The `.env` file is used to store sensitive credentials. Create a `.env` file in the root of your project. Make sure that it remains untracked by Git.
 
 ## GitHub Actions CI
 
@@ -61,7 +43,7 @@ For testing, we recommend creating a dedicated storage zone in your Bunny.net ac
 
 1. Create a new storage zone in your Bunny.net account
 2. Grant it the following permissions:
-   - Read/Write access 
+   - Read/Write access
    - File listing capabilities
 3. Generate a storage-zone-specific API key for more restricted access
 

@@ -10,7 +10,7 @@
 Manages a local cache matched by content in a remote cloud Storage Bucket.
 A local cache for files belonging to a single user is mirrored in a user specific directory in the Storage Bucket. It is intended to support mobile Apps that manage data locally, but need to secure it or share it by pushing a copy to the cloud.
 
-Buckia library provides a unified interface for interacting with multiple storage providers including Bunny.net, S3, and Linode. It is designed to simplify file synchronization, management, and access across different storage backends.
+Buckia library provides a unified interface for interacting with multiple storage providers including Bunny.net, AWS S3, Linode Object Storage, and Backblaze B2. It is designed to simplify file synchronization, management, and access across different storage backends.
 
 ## APP Support (Swift/Kotlin)
 
@@ -45,6 +45,34 @@ Buckia sync supports a range of configuration options and deployment scenarios:
 - **Concurrent operations** - Configurable number of parallel transfers for optimal performance
 - **Orphaned file cleanup** - Optionally delete remote files that no longer exist locally
 - **Multi-platform support**: Native implementations for Swift (iOS/macOS), and Kotlin (Android), plus Python
+
+### Supported Providers
+
+Buckia supports the following storage providers out of the box:
+
+- **Bunny.net Storage**: High-performance, edge-optimized storage with CDN capabilities
+- **AWS S3**: Amazon's object storage service with extensive region support
+- **Linode Object Storage**: Linode's S3-compatible object storage solution
+- **Backblaze B2**: Cost-effective cloud storage with free egress from Cloudflare's network
+
+Each provider can be used by installing the appropriate optional dependency:
+
+```bash
+# Install with Bunny.net support
+pip install "buckia[bunny]"
+
+# Install with AWS S3 support
+pip install "buckia[s3]"
+
+# Install with Linode support
+pip install "buckia[linode]"
+
+# Install with Backblaze B2 support
+pip install "buckia[b2]"
+
+# Install with support for all providers
+pip install "buckia[bunny,s3,linode,b2]"
+```
 
 ### Local File Management
 
@@ -286,7 +314,7 @@ Each bucket configuration supports the following options:
 
 | Option                | Description                                                                  | Type    | Required |
 | --------------------- | ---------------------------------------------------------------------------- | ------- | -------- |
-| `provider`            | Storage provider type (`bunny`, `s3`, or `linode`)                           | String  | Yes      |
+| `provider`            | Storage provider type (`bunny`, `b2`, or `linode`)                           | String  | Yes      |
 | `bucket_name`         | Name of the remote bucket/storage zone                                       | String  | Yes      |
 | `domain`              | Domain for the storage service                                               | String  | No       |
 | `region`              | Geographic region for the bucket                                             | String  | No       |
@@ -435,6 +463,51 @@ buckia/
     ├── s3.py           # S3 implementation
     └── linode.py       # Linode implementation
 ```
+
+## Buckia Documentation
+
+This directory contains all documentation for the Buckia project. The documentation is organized into the following categories:
+
+## User Documentation
+
+Documentation for end users of Buckia.
+
+- [Getting Started](docs/user/getting-started.md) - Introduction and basic usage
+- [Configuration Guide](docs/user/configuration.md) - Detailed configuration options
+- [CLI Reference](docs/user/cli-reference.md) - Command line interface usage
+- [Authentication](docs/user/authentication.md) - Secure token handling and authentication
+
+## Developer Documentation
+
+Documentation for developers contributing to Buckia.
+
+- [Development Guide](docs/developer/develop.md) - Setup and development workflow
+- [Testing Guide](docs/developer/testing.md) - How to run and write tests
+- [VS Code Setup](docs/developer/vscode.md) - VS Code configuration
+- [API Reference](docs/developer/api-reference.md) - Internal API documentation
+
+## Operations Documentation
+
+Documentation for deploying and maintaining Buckia.
+
+- [Continuous Integration](docs/operations/ci.md) - CI/CD pipeline
+- [PyPI Release](docs/operations/pypi-release.md) - Publishing to PyPI
+- [Security Best Practices](docs/operations/security.md) - Security guidelines
+- [Secrets Management](docs/operations/secrets.md) - Handling sensitive information
+
+## Project Documentation
+
+Project-related documentation.
+
+- [Changelog](docs/CHANGES.md) - Version history and changes
+- [Roadmap](docs/project/roadmap.md) - Future development plans
+
+## Mobile Platform Documentation
+
+Documentation specific to mobile platforms.
+
+- [iOS Integration](docs/mobile/ios.md) - iOS platform integration
+- [Android Integration](docs/mobile/android.md) - Android platform integration
 
 ## TODO list
 

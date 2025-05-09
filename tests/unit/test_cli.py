@@ -2,14 +2,10 @@
 Unit tests for the CLI module
 """
 
-import os
-import sys
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
-import yaml
 
 from buckia.cli import (
     DEFAULT_CONFIG_FILE,
@@ -20,11 +16,9 @@ from buckia.cli import (
     parse_args,
     progress_callback,
 )
-from buckia.config import BucketConfig
-from buckia.sync.base import SyncResult
 
 
-def test_progress_callback(capsys):
+def test_progress_callback(capsys: Any) -> None:
     """Test the progress callback function"""
     # Call the callback
     progress_callback(5, 10, "uploading", "test.txt")
@@ -39,7 +33,7 @@ def test_progress_callback(capsys):
 @pytest.mark.skip(reason="Requires special handling for argparse exit behavior")
 @patch("argparse.ArgumentParser.exit")
 @patch("argparse.ArgumentParser.error")
-def test_parse_args_sync(mock_error, mock_exit):
+def test_parse_args_sync(mock_error: MagicMock, mock_exit: MagicMock) -> None:
     """Test parsing sync command arguments"""
     # Prevent system exit
     mock_exit.side_effect = SystemExit
@@ -47,9 +41,7 @@ def test_parse_args_sync(mock_error, mock_exit):
 
     # Catch SystemExit but continue test
     try:
-        args = parse_args(
-            ["sync", "-d", "/test/dir", "--paths", "path1", "path2", "--dry-run"]
-        )
+        args = parse_args(["sync", "-d", "/test/dir", "--paths", "path1", "path2", "--dry-run"])
     except SystemExit:
         args = None
 
@@ -63,7 +55,7 @@ def test_parse_args_sync(mock_error, mock_exit):
 @pytest.mark.skip(reason="Requires special handling for argparse exit behavior")
 @patch("argparse.ArgumentParser.exit")
 @patch("argparse.ArgumentParser.error")
-def test_parse_args_status(mock_error, mock_exit):
+def test_parse_args_status(mock_error: MagicMock, mock_exit: MagicMock) -> None:
     """Test parsing status command arguments"""
     # Prevent system exit
     mock_exit.side_effect = SystemExit
@@ -84,7 +76,7 @@ def test_parse_args_status(mock_error, mock_exit):
 @pytest.mark.skip(reason="Requires special handling for argparse exit behavior")
 @patch("argparse.ArgumentParser.exit")
 @patch("argparse.ArgumentParser.error")
-def test_parse_args_init(mock_error, mock_exit):
+def test_parse_args_init(mock_error: MagicMock, mock_exit: MagicMock) -> None:
     """Test parsing init command arguments"""
     # Prevent system exit
     mock_exit.side_effect = SystemExit
@@ -121,7 +113,7 @@ def test_parse_args_init(mock_error, mock_exit):
 @pytest.mark.skip(reason="Requires special handling for argparse exit behavior")
 @patch("argparse.ArgumentParser.exit")
 @patch("argparse.ArgumentParser.error")
-def test_parse_args_verbose(mock_error, mock_exit):
+def test_parse_args_verbose(mock_error: MagicMock, mock_exit: MagicMock) -> None:
     """Test parsing verbose flag"""
     # Prevent system exit
     mock_exit.side_effect = SystemExit
@@ -145,7 +137,7 @@ def test_parse_args_verbose(mock_error, mock_exit):
 @pytest.mark.skip(reason="Requires special handling for argparse exit behavior")
 @patch("argparse.ArgumentParser.exit")
 @patch("argparse.ArgumentParser.error")
-def test_parse_args_quiet(mock_error, mock_exit):
+def test_parse_args_quiet(mock_error: MagicMock, mock_exit: MagicMock) -> None:
     """Test parsing quiet flag"""
     # Prevent system exit
     mock_exit.side_effect = SystemExit
@@ -168,7 +160,7 @@ def test_parse_args_quiet(mock_error, mock_exit):
 
 @patch("buckia.cli.BucketConfig.from_file")
 @patch("buckia.cli.BuckiaClient")
-def test_cmd_sync_success(mock_client_class, mock_from_file):
+def test_cmd_sync_success(mock_client_class: MagicMock, mock_from_file: MagicMock) -> None:
     """Test successful sync command"""
     # Setup mocks
     mock_config = MagicMock()
@@ -191,6 +183,7 @@ def test_cmd_sync_success(mock_client_class, mock_from_file):
     args.delete_orphaned = True
     args.max_workers = 4
     args.quiet = False
+    args.token_context = None
 
     # Run the command
     exit_code = cmd_sync(args)
@@ -211,7 +204,7 @@ def test_cmd_sync_success(mock_client_class, mock_from_file):
 
 @patch("buckia.cli.BucketConfig.from_file")
 @patch("buckia.cli.BuckiaClient")
-def test_cmd_sync_failure(mock_client_class, mock_from_file):
+def test_cmd_sync_failure(mock_client_class: MagicMock, mock_from_file: MagicMock) -> None:
     """Test sync command with failed result"""
     # Setup mocks
     mock_config = MagicMock()
@@ -234,6 +227,7 @@ def test_cmd_sync_failure(mock_client_class, mock_from_file):
     args.delete_orphaned = None
     args.max_workers = None
     args.quiet = False
+    args.token_context = None
 
     # Run the command
     exit_code = cmd_sync(args)
@@ -249,7 +243,7 @@ def test_cmd_sync_failure(mock_client_class, mock_from_file):
 
 @patch("buckia.cli.BucketConfig.from_file")
 @patch("buckia.cli.BuckiaClient")
-def test_cmd_sync_exception(mock_client_class, mock_from_file):
+def test_cmd_sync_exception(mock_client_class: MagicMock, mock_from_file: MagicMock) -> None:
     """Test sync command with exception"""
     # Setup mocks
     mock_from_file.side_effect = ValueError("Config error")
@@ -259,6 +253,7 @@ def test_cmd_sync_exception(mock_client_class, mock_from_file):
     args.config = "/test/config"
     args.directory = "/test/dir"
     args.quiet = False
+    args.token_context = None
 
     # Run the command
     exit_code = cmd_sync(args)
@@ -271,7 +266,9 @@ def test_cmd_sync_exception(mock_client_class, mock_from_file):
 
 @patch("buckia.cli.BucketConfig.from_file")
 @patch("buckia.cli.BuckiaClient")
-def test_cmd_status_success(mock_client_class, mock_from_file, capsys):
+def test_cmd_status_success(
+    mock_client_class: MagicMock, mock_from_file: MagicMock, capsys: Any
+) -> None:
     """Test successful status command"""
     # Setup mocks
     mock_config = MagicMock()
@@ -301,6 +298,7 @@ def test_cmd_status_success(mock_client_class, mock_from_file, capsys):
     args.config = "/test/config"
     args.directory = "/test/dir"
     args.paths = ["path1", "path2"]
+    args.token_context = None
 
     # Run the command
     exit_code = cmd_status(args)
@@ -333,7 +331,7 @@ def test_cmd_status_success(mock_client_class, mock_from_file, capsys):
 
 @patch("buckia.cli.BucketConfig.from_file")
 @patch("buckia.cli.BuckiaClient")
-def test_cmd_status_exception(mock_client_class, mock_from_file):
+def test_cmd_status_exception(mock_client_class: MagicMock, mock_from_file: MagicMock) -> None:
     """Test status command with exception"""
     # Setup mocks
     mock_from_file.side_effect = ValueError("Config error")
@@ -342,6 +340,7 @@ def test_cmd_status_exception(mock_client_class, mock_from_file):
     args = MagicMock()
     args.config = "/test/config"
     args.directory = "/test/dir"
+    args.token_context = None
 
     # Run the command
     exit_code = cmd_status(args)
@@ -354,7 +353,9 @@ def test_cmd_status_exception(mock_client_class, mock_from_file):
 
 @patch("buckia.cli.BucketConfig")
 @patch("buckia.cli.os.path.exists")
-def test_cmd_init_success(mock_exists, mock_bucket_config_class, capsys):
+def test_cmd_init_success(
+    mock_exists: MagicMock, mock_bucket_config_class: MagicMock, capsys: Any
+) -> None:
     """Test successful init command"""
     # Setup mocks
     mock_exists.return_value = False
@@ -387,6 +388,7 @@ def test_cmd_init_success(mock_exists, mock_bucket_config_class, capsys):
         sync_paths=["path1", "path2"],
         delete_orphaned=True,
         region="us-east-1",
+        token_context=args.token_context,
     )
     mock_config.save.assert_called_once_with("/test/config")
 
@@ -397,7 +399,9 @@ def test_cmd_init_success(mock_exists, mock_bucket_config_class, capsys):
 
 @patch("buckia.cli.BucketConfig")
 @patch("buckia.cli.os.path.exists")
-def test_cmd_init_file_exists_no_force(mock_exists, mock_bucket_config_class):
+def test_cmd_init_file_exists_no_force(
+    mock_exists: MagicMock, mock_bucket_config_class: MagicMock
+) -> None:
     """Test init command with existing file and no force flag"""
     # Setup mocks
     mock_exists.return_value = True
@@ -409,6 +413,7 @@ def test_cmd_init_file_exists_no_force(mock_exists, mock_bucket_config_class):
     args.provider = "bunny"
     args.bucket_name = "test-bucket"
     args.force = False
+    args.token_context = None
 
     # Run the command
     exit_code = cmd_init(args)
@@ -421,7 +426,9 @@ def test_cmd_init_file_exists_no_force(mock_exists, mock_bucket_config_class):
 
 @patch("buckia.cli.BucketConfig")
 @patch("buckia.cli.os.path.exists")
-def test_cmd_init_file_exists_with_force(mock_exists, mock_bucket_config_class):
+def test_cmd_init_file_exists_with_force(
+    mock_exists: MagicMock, mock_bucket_config_class: MagicMock
+) -> None:
     """Test init command with existing file and force flag"""
     # Setup mocks
     mock_exists.return_value = True
@@ -440,6 +447,7 @@ def test_cmd_init_file_exists_with_force(mock_exists, mock_bucket_config_class):
     args.delete_orphaned = False
     args.region = None
     args.force = True
+    args.token_context = None
 
     # Run the command
     exit_code = cmd_init(args)
@@ -453,7 +461,7 @@ def test_cmd_init_file_exists_with_force(mock_exists, mock_bucket_config_class):
 
 @patch("buckia.cli.BucketConfig")
 @patch("buckia.cli.os.path.exists")
-def test_cmd_init_exception(mock_exists, mock_bucket_config_class):
+def test_cmd_init_exception(mock_exists: MagicMock, mock_bucket_config_class: MagicMock) -> None:
     """Test init command with exception"""
     # Setup mocks
     mock_exists.return_value = False
@@ -466,6 +474,7 @@ def test_cmd_init_exception(mock_exists, mock_bucket_config_class):
     args.provider = "bunny"
     args.bucket_name = "test-bucket"
     args.force = False
+    args.token_context = None
 
     # Run the command
     exit_code = cmd_init(args)
@@ -477,7 +486,7 @@ def test_cmd_init_exception(mock_exists, mock_bucket_config_class):
 
 
 @patch("buckia.cli.parse_args")
-def test_main_success(mock_parse_args):
+def test_main_success(mock_parse_args: MagicMock) -> None:
     """Test successful main function"""
     # Setup mock
     mock_args = MagicMock()
@@ -494,7 +503,7 @@ def test_main_success(mock_parse_args):
 
 
 @patch("buckia.cli.parse_args")
-def test_main_keyboard_interrupt(mock_parse_args, capsys):
+def test_main_keyboard_interrupt(mock_parse_args: MagicMock, capsys: Any) -> None:
     """Test main function with keyboard interrupt"""
     # Setup mock
     mock_parse_args.side_effect = KeyboardInterrupt()
@@ -512,7 +521,7 @@ def test_main_keyboard_interrupt(mock_parse_args, capsys):
 
 
 @patch("buckia.cli.parse_args")
-def test_main_unexpected_error(mock_parse_args):
+def test_main_unexpected_error(mock_parse_args: MagicMock) -> None:
     """Test main function with unexpected error"""
     # Setup mock
     mock_parse_args.side_effect = ValueError("Unexpected error")

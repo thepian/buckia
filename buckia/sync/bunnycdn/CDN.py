@@ -238,9 +238,7 @@ class CDN:
             }
         )
         try:
-            response = requests.post(
-                self._Geturl("storagezone"), data=values, headers=self.headers
-            )
+            response = requests.post(self._Geturl("storagezone"), data=values, headers=self.headers)
             response.raise_for_status()
         except HTTPError as http:
             return {"status": "error", "HTTP": response.status_code, "msg": http}
@@ -413,9 +411,7 @@ class CDN:
         }
 
         try:
-            response = requests.get(
-                self._Geturl("statistics"), params=params, headers=self.headers
-            )
+            response = requests.get(self._Geturl("statistics"), params=params, headers=self.headers)
             response.raise_for_status()
         except HTTPError as http:
             return {"status": "error", "HTTP": response.status_code, "msg": http}
@@ -478,9 +474,7 @@ class CDN:
                 "StorageZoneId": StorageZoneId,
             }
         try:
-            response = requests.post(
-                self._Geturl("pullzone"), data=values, headers=self.headers
-            )
+            response = requests.post(self._Geturl("pullzone"), data=values, headers=self.headers)
             response.raise_for_status()
         except HTTPError as http:
             return {"status": "error", "HTTP": response.status_code, "msg": http}
@@ -500,9 +494,7 @@ class CDN:
                                 The ID (number) of the pullzone to return
         """
         try:
-            response = requests.get(
-                self._Geturl(f"pullzone/{PullZoneID}"), headers=self.headers
-            )
+            response = requests.get(self._Geturl(f"pullzone/{PullZoneID}"), headers=self.headers)
             response.raise_for_status()
         except HTTPError as http:
             return {"status": "error", "HTTP": response.status_code, "msg": http}
@@ -813,9 +805,7 @@ class CDN:
 
         """
         try:
-            response = requests.delete(
-                self._Geturl(f"pullzone/{PullZoneID}"), headers=self.headers
-            )
+            response = requests.delete(self._Geturl(f"pullzone/{PullZoneID}"), headers=self.headers)
             response.raise_for_status()
         except HTTPError as http:
             return {"status": "error", "HTTP": response.status_code, "msg": http}

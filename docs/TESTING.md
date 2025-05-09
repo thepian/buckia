@@ -39,28 +39,104 @@ uv run -m pytest --skip-cleanup
 
 # Preserve remote files and directories for debugging
 uv run -m pytest --preserve-remote
+
+# Show all token-related environment variables at the start of the test session
+uv run -m pytest --show-env-vars
 ```
+
+#### Debugging Token Environment Variables
+
+For debugging token-related issues, you can use the following approaches:
+
+1. Use the `--show-env-vars` flag to see all token-related environment variables:
+
+```bash
+uv run -m pytest --show-env-vars
+```
+
+This will display:
+
+- Which environment variables are found/missing
+- Whether a .env file was detected
+- A summary of available tokens
+
+2. Manually check for required environment variables:
+
+```bash
+# Check if a specific token is available
+echo $buckia.buckia.bunny
+
+# List all buckia-related environment variables
+env | grep buckia
+```
+
+When running integration tests, the output will show which environment variables are missing, helping you to identify configuration issues.
 
 ## Test Configuration
 
 ### Configuration File
 
-Tests use a configuration file located at `tests/config/test_config.yaml` by default. You can create this file based on the provided example:
-
-```bash
-cp tests/config/test_config.yaml.example tests/config/test_config.yaml
-```
+Tests use a configuration file located at `tests/config/test_config.yaml` by default.
 
 Edit this file to include your provider-specific credentials.
 
-### Environment Variables
+### Environment Variables and API Token Management
 
-You can also configure tests using environment variables:
+The tests now use the actual TokenManager implementation which retrieves tokens from environment variables. The naming convention for environment variables follows the pattern:
 
-- `BUNNY_API_KEY`: API key for Bunny.net tests
-- `BUNNY_STORAGE_API_KEY`: Storage API key for Bunny.net
+```
+buckia.<namespace>.<context>
+```
+
+For integration tests, the following environment variable is REQUIRED:
+
+- `buckia.buckia.demo`: API key for integration tests (currently bunny.net API key)
+
+All integration tests use the fixed token context "demo" for consistency. Additional provider-specific variables:
+
 - `BUNNY_STORAGE_ZONE`: Storage zone name for Bunny.net
 - `RUN_INTEGRATION_TESTS`: Set to "1" to enable integration tests
+
+Other token contexts (not currently used in tests):
+
+- `buckia.buckia.bunny`: API key for Bunny.net
+- `buckia.buckia.bunny_storage`: Storage API key for Bunny.net
+- `buckia.buckia.s3`: AWS S3 access key
+- `buckia.buckia.linode`: Linode object storage token
+
+#### Using .env Files (Recommended for Local Development)
+
+For local development, you can create a `.env` file in the project root with your API tokens, following the naming convention:
+
+```bash
+# Create a .env file (not checked into version control)
+cat > .env << EOF
+# Required for all integration tests (currently using bunny.net API key)
+buckia.buckia.demo=your-bunny-api-key
+
+# Storage zone configuration
+BUNNY_STORAGE_ZONE=your-storage-zone
+
+# Enable integration tests
+RUN_INTEGRATION_TESTS=1
+EOF
+```
+
+The test fixtures will automatically load variables from this file when running integration tests. This approach keeps sensitive credentials out of your configuration files and test code.
+
+#### No Interactive Prompts During Tests
+
+IMPORTANT: The TokenManager NEVER prompts for authentication during integration tests. It relies solely on:
+
+1. Environment variables (preferred)
+2. Keyring without authentication (fallback)
+
+If the required environment variables are missing, integration tests should clearly indicate which variables are needed, not prompt for them. This is critical for both:
+
+- CI/CD pipelines where environment variables are set as GitHub Actions secrets
+- Local development where variables come from .env files
+
+Integration tests will report missing variables with clear error messages to help diagnose configuration issues. This non-interactive behavior is intentional and should be maintained throughout all test code.
 
 ## Test Types
 

@@ -46,11 +46,7 @@ class Storage:
             self.base_url = "https://storage.bunnycdn.com/" + storage_zone + "/"
         else:
             self.base_url = (
-                "https://"
-                + storage_zone_region
-                + ".storage.bunnycdn.com/"
-                + storage_zone
-                + "/"
+                "https://" + storage_zone_region + ".storage.bunnycdn.com/" + storage_zone + "/"
             )
 
     def DownloadFile(self, storage_path, download_path=os.getcwd()):

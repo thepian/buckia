@@ -63,12 +63,8 @@ Create a file at `tests/config/test_config.yaml` with the following structure:
 ```yaml
 provider: bunny
 bucket_name: your-test-storage-zone
-auth:
-  api_key: your-api-key
-  storage_api_key: your-storage-api-key
-sync:
-  delete_orphaned: true
-  max_workers: 4
+delete_orphaned: true
+max_workers: 4
 checksum_algorithm: sha256
 ```
 
@@ -81,7 +77,7 @@ checksum_algorithm: sha256
 In your GitHub repository, add the following secrets:
 
 - `BUNNY_API_KEY`: Your Bunny.net API key (under account settings)
-- `BUNNY_STORAGE_API_KEY`: Your Bunny.net Storage API key (under FTP & API Access)
+- `buckia.buckia.demo`: Your Bunny.net Storage API key (under FTP & API Access)
 - `PYPI_USERNAME`: Your PyPI username (for publishing)
 - `PYPI_PASSWORD`: Your PyPI password or token (for publishing)
 
@@ -90,18 +86,21 @@ In your GitHub repository, add the following secrets:
 The repository contains several GitHub Actions workflows:
 
 1. **Unit Tests** (`.github/workflows/unit-tests.yml`)
+
    - Runs all unit tests
    - Triggered on pushes to main and pull requests
    - Runs on multiple Python versions (3.9, 3.10, 3.11, 3.12)
    - Uses UV for dependency management
 
 2. **Integration Tests** (`.github/workflows/integration-tests.yml`)
+
    - Runs integration tests against real storage providers
    - Triggered on pushes to main and pull requests
    - Requires secrets for authentication with storage providers
    - Includes options for running extended test suites
 
 3. **Linting** (`.github/workflows/lint.yml`)
+
    - Runs code quality checks (black, isort, flake8, mypy)
    - Ensures code style consistency
    - Triggered on pushes to main and pull requests
@@ -109,7 +108,7 @@ The repository contains several GitHub Actions workflows:
 
 4. **Publishing** (`.github/workflows/publish.yml`)
    - Builds and publishes package to PyPI
-   - Triggered when a tag matching v* is pushed (e.g., v1.0.0)
+   - Triggered when a tag matching v\* is pushed (e.g., v1.0.0)
    - Uses PYPI_USERNAME and PYPI_PASSWORD secrets
 
 #### Using UV in GitHub Actions
@@ -228,6 +227,7 @@ Create utilities for generating test files with:
 ### Testing Concurrency
 
 Ensure tests for concurrent operations:
+
 - Verify thread safety
 - Test performance with different worker counts
 - Handle race conditions properly

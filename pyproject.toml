@@ -6,12 +6,19 @@ build-backend = "setuptools.build_meta"
 name = "buckia"
 description = "Multi-platform, multi-backend storage bucket synchronization"
 readme = "README.md"
-authors = [
-    {name = "Henrik Vendelbo", email = "hvendelbo+pypi@gmail.com"}
-]
+authors = [{ name = "Henrik Vendelbo", email = "hvendelbo+pypi@gmail.com" }]
 requires-python = ">=3.10"
-keywords = ["storage", "bucket", "sync", "bunny", "s3", "linode"]
-license = {text = "AGPL-3.0"}
+keywords = [
+    "storage",
+    "bucket",
+    "sync",
+    "bunny",
+    "s3",
+    "linode",
+    "b2",
+    "backblaze",
+]
+license = { text = "AGPL-3.0" }
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -26,6 +33,9 @@ classifiers = [
 dependencies = [
     "requests>=2.25.0",
     "pyyaml>=5.4.0",
+    "keyring>=24.0.0",
+    "pytest>=8.3.5",
+    "python-dotenv>=1.1.0",
 ]
 dynamic = ["version"]
 
@@ -33,12 +43,12 @@ dynamic = ["version"]
 bunny = ["bunnycdnpython>=0.0.8"]
 s3 = ["boto3>=1.17.0"]
 linode = ["linode-api4>=5.0.0"]
+b2 = ["b2sdk>=2.8.0,<3"]
 dev = [
     "pytest>=6.2.0",
     "pytest-cov>=2.10.1",
     "pytest-env>=0.8.1",
     "pytest-timeout>=2.1.0",
-    "pytest-dotenv>=0.5.2",
     "black>=23.12.1",
     "flake8>=7.0.0",
     "mypy>=1.15.0",
@@ -57,11 +67,11 @@ Issues = "https://github.com/thepian/buckia/issues"
 buckia = "buckia.cli:main"
 
 [tool.setuptools]
-packages = ["buckia", "buckia.sync", "buckia.sync.bunnycdn"]
+packages = ["buckia", "buckia.sync", "buckia.sync.bunnycdn", "buckia.security"]
 include-package-data = true
 
 [tool.setuptools.dynamic]
-version = {attr = "buckia.__version__"}
+version = { attr = "buckia.__version__" }
 
 # MyPy configuration
 [tool.mypy]

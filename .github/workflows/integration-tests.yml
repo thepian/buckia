@@ -55,25 +55,8 @@ jobs:
       run: |
         # Create virtual environment and install dependencies
         uv venv
-        uv pip install -e ".[dev,bunny]"
+        uv pip install -e ".[dev,bunny,b2]"
         uv pip install python-dotenv
-    
-    - name: Create test configuration
-      run: |
-        mkdir -p tests/config
-        cat > tests/config/test_config.yaml << EOF
-        provider: bunny
-        bucket_name: buckia-test
-        auth:
-          api_key: ${{ secrets.BUNNY_API_KEY }}
-          storage_api_key: ${{ secrets.BUNNY_STORAGE_API_KEY }}
-        sync:
-          delete_orphaned: true
-          max_workers: 4
-        checksum_algorithm: sha256
-        provider_settings:
-          hostname: storage.bunnycdn.com
-        EOF
     
     - name: Validate credentials
       run: |
@@ -81,28 +64,28 @@ jobs:
         uv run python ./scripts/validate_secrets.py
       env:
         BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
-        BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
+        buckia_buckia_demo: ${{ secrets.BUNNY_STORAGE_API_KEY }}
     
     - name: Run basic tests
       run: |
         uv run -m pytest tests/integration/test_bunny.py tests/integration/test_operations.py -v
       env:
         BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
-        BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
+        buckia_buckia_demo: ${{ secrets.BUNNY_STORAGE_API_KEY }}
     
     - name: Run sync tests
       run: |
         uv run -m pytest tests/integration/test_sync.py -v
       env:
         BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
-        BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
+        buckia_buckia_demo: ${{ secrets.BUNNY_STORAGE_API_KEY }}
     
     - name: Run error handling tests
       run: |
         uv run -m pytest tests/integration/test_error_handling.py -v
       env:
         BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
-        BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
+        buckia_buckia_demo: ${{ secrets.BUNNY_STORAGE_API_KEY }}
     
     - name: Run stress tests (if requested)
       if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_full_suite == 'true' }}
@@ -110,5 +93,5 @@ jobs:
         uv run -m pytest tests/integration/test_error_handling.py::test_network_throttling -v
       env:
         BUNNY_API_KEY: ${{ secrets.BUNNY_API_KEY }}
-        BUNNY_STORAGE_API_KEY: ${{ secrets.BUNNY_STORAGE_API_KEY }}
+        buckia_buckia_demo: ${{ secrets.BUNNY_STORAGE_API_KEY }}
         STRESS_TEST: "1"

@@ -4,8 +4,7 @@ Unit tests for the BaseSync class and SyncResult
 
 import os
 import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -127,9 +126,7 @@ def test_base_sync_init():
 
 def test_calculate_checksum():
     """Test calculate_checksum method"""
-    config = BucketConfig(
-        provider="test", bucket_name="test-bucket", checksum_algorithm="sha256"
-    )
+    config = BucketConfig(provider="test", bucket_name="test-bucket", checksum_algorithm="sha256")
 
     sync = TestSyncImplementation(config)
 
@@ -296,9 +293,7 @@ def test_sync_basic():
                         mock_delete.return_value = True
 
                         # Run the sync
-                        result = sync.sync(
-                            local_path=temp_dir, max_workers=2, delete_orphaned=True
-                        )
+                        result = sync.sync(local_path=temp_dir, max_workers=2, delete_orphaned=True)
 
                         # All operations should succeed
                         assert result.success is True
@@ -308,9 +303,7 @@ def test_sync_basic():
                         # file3.txt - exists only remotely, should be downloaded
                         assert result.uploaded == 2
                         assert result.downloaded == 1
-                        assert (
-                            result.deleted == 1
-                        )  # file3.txt from remote would be deleted
+                        assert result.deleted == 1  # file3.txt from remote would be deleted
                         assert result.failed == 0
 
                         # Check upload calls
@@ -344,9 +337,7 @@ def test_sync_dry_run():
                         mock_checksum.return_value = "local-checksum"
 
                         # Run the sync with dry_run=True
-                        result = sync.sync(
-                            local_path=temp_dir, delete_orphaned=True, dry_run=True
-                        )
+                        result = sync.sync(local_path=temp_dir, delete_orphaned=True, dry_run=True)
 
                         # All operations should succeed, but no actual changes
                         assert result.success is True

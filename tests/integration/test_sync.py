@@ -3,13 +3,20 @@ Integration tests for synchronization functionality
 """
 
 import os
+from pathlib import Path
+from typing import Callable, Dict, Optional
 
 import pytest
 
+from buckia import BuckiaClient
+
 
 def test_basic_sync(
-    buckia_client, test_directory_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: BuckiaClient,
+    test_directory_factory: Callable[[str, Dict[str, int]], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test basic synchronization (upload new files)"""
     # Create a test directory with files
     test_files = {
@@ -52,8 +59,11 @@ def test_basic_sync(
 
 @pytest.mark.xfail(reason="Test needs review")
 def test_sync_with_updates(
-    buckia_client, test_directory_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: BuckiaClient,
+    test_directory_factory: Callable[[str, Dict[str, int]], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test synchronization with file updates"""
     # Create initial test files
     test_files = {
@@ -89,19 +99,18 @@ def test_sync_with_updates(
     )
 
     # Should have updated 2 files
-    assert (
-        result2.uploaded >= 2
-    ), f"Expected at least 2 updated files, got {result2.uploaded}"
+    assert result2.uploaded >= 2, f"Expected at least 2 updated files, got {result2.uploaded}"
     # 1 file should be unchanged
-    assert (
-        result2.unchanged >= 1
-    ), f"Expected at least 1 unchanged file, got {result2.unchanged}"
+    assert result2.unchanged >= 1, f"Expected at least 1 unchanged file, got {result2.unchanged}"
 
 
 @pytest.mark.xfail(reason="Test needs review")
 def test_sync_with_deletions(
-    buckia_client, test_directory_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: "BuckiaClient",
+    test_directory_factory: Callable[[str, Optional[Dict[str, int]]], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test synchronization with orphaned file deletion"""
     # Create initial test files
     test_files = {
@@ -137,9 +146,7 @@ def test_sync_with_deletions(
     )
 
     # Should have deleted 2 files
-    assert (
-        result2.deleted >= 2
-    ), f"Expected at least 2 deleted files, got {result2.deleted}"
+    assert result2.deleted >= 2, f"Expected at least 2 deleted files, got {result2.deleted}"
 
     # Verify that deleted files are no longer in remote storage
     remote_files = buckia_client.list_files()
@@ -152,15 +159,16 @@ def test_sync_with_deletions(
     # Verify that kept files are still in remote storage
     for file_to_keep in ["keep1.txt", "keep2.txt"]:
         remote_path = f"{test_dir.name}/{file_to_keep}"
-        assert (
-            remote_path in remote_files
-        ), f"Kept file {remote_path} not found in remote storage"
+        assert remote_path in remote_files, f"Kept file {remote_path} not found in remote storage"
 
 
 @pytest.mark.xfail(reason="Test needs review")
 def test_sync_with_filters(
-    buckia_client, test_directory_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: "BuckiaClient",
+    test_directory_factory: Callable[[str, Optional[Dict[str, int]]], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test synchronization with include/exclude patterns"""
     # Create test files with different extensions
     test_files = {
@@ -238,8 +246,11 @@ def test_sync_with_filters(
 
 @pytest.mark.xfail(reason="Test needs review")
 def test_sync_specific_paths(
-    buckia_client, test_directory_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: "BuckiaClient",
+    test_directory_factory: Callable[[str, Optional[Dict[str, int]]], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test synchronization with specific paths"""
     # Create test files in different paths
     test_files = {
@@ -271,10 +282,7 @@ def test_sync_specific_paths(
     # Count how many files should be synced
     expected_synced_count = 0
     for file_path in test_files.keys():
-        if (
-            any(file_path.startswith(path) for path in sync_paths)
-            or file_path in sync_paths
-        ):
+        if any(file_path.startswith(path) for path in sync_paths) or file_path in sync_paths:
             expected_synced_count += 1
 
     # Should have uploaded only files in specified paths
@@ -287,8 +295,7 @@ def test_sync_specific_paths(
     for file_path in test_files.keys():
         remote_path = f"{test_dir.name}/{file_path}"
         should_be_synced = (
-            any(file_path.startswith(path) for path in sync_paths)
-            or file_path in sync_paths
+            any(file_path.startswith(path) for path in sync_paths) or file_path in sync_paths
         )
 
         if should_be_synced:
@@ -303,8 +310,11 @@ def test_sync_specific_paths(
 
 @pytest.mark.xfail(reason="Test needs review")
 def test_sync_dry_run(
-    buckia_client, test_directory_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: "BuckiaClient",
+    test_directory_factory: Callable[[str, Optional[Dict[str, int]]], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test synchronization in dry run mode"""
     # Create test files
     test_files = {
@@ -362,9 +372,5 @@ def test_sync_dry_run(
             file_name,  # Simple filename without directory
         ]
 
-        found = any(
-            path in after_real_sync_remote_files for path in remote_path_variants
-        )
-        assert (
-            found
-        ), f"File {file_name} not found in remote files: {after_real_sync_remote_files}"
+        found = any(path in after_real_sync_remote_files for path in remote_path_variants)
+        assert found, f"File {file_name} not found in remote files: {after_real_sync_remote_files}"

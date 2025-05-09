@@ -3,8 +3,8 @@ Integration tests for Bunny.net storage provider
 """
 
 import os
-import time
 from pathlib import Path
+from typing import Callable, Dict
 
 import pytest
 
@@ -12,7 +12,7 @@ from buckia import BuckiaClient
 from buckia.sync.bunny import BunnySync
 
 
-def test_bunny_connection(buckia_client):
+def test_bunny_connection(buckia_client: BuckiaClient) -> None:
     """Test connection to Bunny.net storage"""
     # Test connection with main client
     connection_results = buckia_client.test_connection()
@@ -22,7 +22,7 @@ def test_bunny_connection(buckia_client):
     assert isinstance(buckia_client.backend, BunnySync), "Backend is not BunnySync"
 
 
-def test_bunny_list_files(buckia_client, remote_test_prefix):
+def test_bunny_list_files(buckia_client: BuckiaClient, remote_test_prefix: str) -> None:
     """Test listing files from Bunny.net storage"""
     # List all files
     files = buckia_client.list_files()
@@ -35,14 +35,15 @@ def test_bunny_list_files(buckia_client, remote_test_prefix):
         if "/" in first_file_path:
             directory = first_file_path.split("/")[0]
             dir_files = buckia_client.list_files(directory)
-            assert isinstance(
-                dir_files, dict
-            ), "Path-based listing should return a dictionary"
+            assert isinstance(dir_files, dict), "Path-based listing should return a dictionary"
 
 
 def test_bunny_file_operations(
-    buckia_client, test_file_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: BuckiaClient,
+    test_file_factory: Callable[[str, int], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test basic file operations with Bunny.net storage"""
     # Create a test file
     test_file = test_file_factory("bunny_test.txt", size=1024)
@@ -54,9 +55,7 @@ def test_bunny_file_operations(
 
     # List files to verify upload
     files = buckia_client.list_files()
-    assert (
-        remote_path in files
-    ), f"Uploaded file {remote_path} not found in remote files"
+    assert remote_path in files, f"Uploaded file {remote_path} not found in remote files"
 
     # Get public URL
     public_url = buckia_client.get_public_url(remote_path)
@@ -68,9 +67,7 @@ def test_bunny_file_operations(
     download_result = buckia_client.download_file(remote_path, str(download_path))
     assert download_result, "File download failed"
     assert download_path.exists(), "Downloaded file not found"
-    assert (
-        download_path.stat().st_size == test_file.stat().st_size
-    ), "Downloaded file size mismatch"
+    assert download_path.stat().st_size == test_file.stat().st_size, "Downloaded file size mismatch"
 
     # Delete the file
     delete_result = buckia_client.delete_file(remote_path)
@@ -78,14 +75,15 @@ def test_bunny_file_operations(
 
     # Verify deletion
     files = buckia_client.list_files()
-    assert (
-        remote_path not in files
-    ), f"Deleted file {remote_path} still found in remote files"
+    assert remote_path not in files, f"Deleted file {remote_path} still found in remote files"
 
 
 def test_bunny_sync_upload_only(
-    buckia_client, test_directory_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: BuckiaClient,
+    test_directory_factory: Callable[[str, Dict[str, int]], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test synchronization (upload only) with Bunny.net storage"""
     # Create a test directory with files
     test_files = {
@@ -119,9 +117,7 @@ def test_bunny_sync_upload_only(
 
     for file_path in test_files.keys():
         remote_path = f"{remote_test_prefix}/{file_path}"
-        assert (
-            remote_path in remote_files
-        ), f"Uploaded file {remote_path} not found in remote files"
+        assert remote_path in remote_files, f"Uploaded file {remote_path} not found in remote files"
 
 
 @pytest.mark.skipif(
@@ -129,8 +125,11 @@ def test_bunny_sync_upload_only(
     reason="Purge tests are slow and require pull zone configuration",
 )
 def test_bunny_purge_cache(
-    buckia_client, test_file_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: BuckiaClient,
+    test_file_factory: Callable[[str, int], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test CDN cache purging (requires pull zone configuration)"""
     # Skip if BunnySync doesn't have a pull_zone_name
     if not getattr(buckia_client.backend, "pull_zone_name", None):

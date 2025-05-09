@@ -260,6 +260,45 @@ uv pip install -r requirements.txt
 uv pip check
 ```
 
+## Managing Backends
+
+### bunny.net
+
+Stats
+
+    account: ......@t.com
+    admin: dash.bunny.net
+    domain: storage.bunnycdn.com
+    bucket: buckia-test
+    token: dbb411fd-b6c3..
+    read-only: 42f49d87-821a..
+
+### B2
+
+Stats
+
+    account: ......o@icloud.com
+    admin: secure.backblaze.com
+    domain: s3.us-west-001.backblazeb2.com
+    bucket: buckia-test / 81cffb4f05c7c201966b0b12
+    token:
+    read-only:
+
+How to save the token in keyring
+
+> keyring ...
+
+### linode.com
+
+Stats
+
+    account: ......@t.com
+    admin: cloud.linode.com
+    domain: s3.us-east-1.linodeobjects.com
+    bucket: buckia-test
+    token:
+    read-only:
+
 ## Releasing and Publishing
 
 ### Publishing to PyPI Using GitHub Actions

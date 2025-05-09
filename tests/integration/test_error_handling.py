@@ -5,6 +5,8 @@ Integration tests for error handling and edge cases
 import os
 import tempfile
 import time
+from pathlib import Path
+from typing import Any, Callable, Dict
 
 import pytest
 
@@ -12,62 +14,13 @@ from buckia import BucketConfig, BuckiaClient
 
 
 @pytest.mark.xfail(
-    reason="The BunnyCDN client doesn't reliably fail with invalid credentials in test environments"
-)
-def test_invalid_credentials():
-    """Test behavior with invalid API credentials"""
-    # Create configuration with invalid credentials
-    config = BucketConfig(
-        provider="bunny",
-        bucket_name="test-bucket",
-        credentials={
-            "api_key": "invalid-api-key",
-            "storage_api_key": "invalid-storage-api-key",
-        },
-    )
-
-    # Create client with invalid credentials
-    client = BuckiaClient(config)
-
-    # Test connection should fail
-    connection_results = client.test_connection()
-    assert not any(
-        connection_results.values()
-    ), "Connection should fail with invalid credentials"
-
-    # Attempts to perform operations should fail gracefully
-    with tempfile.NamedTemporaryFile() as temp_file:
-        # Write some content to the temp file
-        temp_file.write(b"Test content")
-        temp_file.flush()
-
-        # Upload should fail but not crash
-        upload_result = client.upload_file(temp_file.name, "test.txt")
-        assert not upload_result, "Upload should fail with invalid credentials"
-
-        # List files should fail but not crash
-        list_result = client.list_files()
-        assert isinstance(
-            list_result, dict
-        ), "list_files should return an empty dict on failure"
-        assert (
-            len(list_result) == 0
-        ), "list_files should return an empty dict on failure"
-
-
-@pytest.mark.xfail(
     reason="The BunnyCDN client may create nonexistent buckets on the fly in test environments"
 )
-def test_nonexistent_bucket():
+def test_nonexistent_bucket() -> None:
     """Test behavior with nonexistent bucket"""
     # Create configuration with nonexistent bucket
     config = BucketConfig(
-        provider="bunny",
-        bucket_name="nonexistent-bucket-" + str(int(time.time())),
-        credentials={
-            "api_key": os.environ.get("BUNNY_API_KEY", "test-key"),
-            "storage_api_key": os.environ.get("BUNNY_STORAGE_API_KEY", "test-key"),
-        },
+        provider="bunny", bucket_name="nonexistent-bucket-" + str(int(time.time()))
     )
 
     # Create client with nonexistent bucket
@@ -79,8 +32,7 @@ def test_nonexistent_bucket():
     #     connection_results.values()
     # ), "Connection should fail with nonexistent bucket"
     assert (
-        connection_results["api_key"] is False
-        and connection_results["password"] is False
+        connection_results["api_key"] is False and connection_results["password"] is False
     ), "Connection should fail with nonexistent bucket"
 
     # Attempts to perform operations should fail gracefully
@@ -95,15 +47,11 @@ def test_nonexistent_bucket():
 
         # List files should fail but not crash
         list_result = client.list_files()
-        assert isinstance(
-            list_result, dict
-        ), "list_files should return an empty dict on failure"
-        assert (
-            len(list_result) == 0
-        ), "list_files should return an empty dict on failure"
+        assert isinstance(list_result, dict), "list_files should return an empty dict on failure"
+        assert len(list_result) == 0, "list_files should return an empty dict on failure"
 
 
-def test_missing_local_file(buckia_client):
+def test_missing_local_file(buckia_client: BuckiaClient) -> None:
     """Test behavior when local file is missing"""
     # Generate path to a nonexistent file
     nonexistent_file = f"/tmp/nonexistent_file_{int(time.time())}.txt"
@@ -116,7 +64,7 @@ def test_missing_local_file(buckia_client):
 @pytest.mark.xfail(
     reason="BunnyCDN's Python client may create empty files for nonexistent remote files in test environments"
 )
-def test_nonexistent_remote_file(buckia_client, temp_directory):
+def test_nonexistent_remote_file(buckia_client: BuckiaClient, temp_directory: Path) -> None:
     """Test behavior when remote file is missing"""
     # Generate path to a nonexistent remote file
     nonexistent_remote = f"nonexistent_file_{int(time.time())}.txt"
@@ -125,16 +73,17 @@ def test_nonexistent_remote_file(buckia_client, temp_directory):
     download_path = temp_directory / "downloaded.txt"
 
     # Download should fail but not crash
-    download_result = buckia_client.download_file(
-        nonexistent_remote, str(download_path)
-    )
+    download_result = buckia_client.download_file(nonexistent_remote, str(download_path))
     assert not download_result, "Download should fail with nonexistent remote file"
     assert not download_path.exists(), "No file should be created for failed download"
 
 
 def test_read_only_directory(
-    buckia_client, temp_directory, test_file_factory, cleanup_remote_files
-):
+    buckia_client: BuckiaClient,
+    temp_directory: Path,
+    test_file_factory: Callable[[str, int], Path],
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test behavior when local directory is read-only"""
     # Skip on non-Unix platforms
     if os.name != "posix":
@@ -166,8 +115,11 @@ def test_read_only_directory(
 
 
 def test_very_large_sync(
-    buckia_client, test_directory_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: BuckiaClient,
+    test_directory_factory: Callable[[str, Dict[str, int]], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test synchronization with a large number of small files"""
     # Create a directory with many small files
     test_dir = test_directory_factory("large_sync", files={})
@@ -211,7 +163,9 @@ def test_very_large_sync(
     assert result2.failed == 0, f"Sync reported {result2.failed} failed operations"
 
 
-def test_zero_byte_file(buckia_client, temp_directory, cleanup_remote_files):
+def test_zero_byte_file(
+    buckia_client: BuckiaClient, temp_directory: Path, cleanup_remote_files: Callable[[], None]
+) -> None:
     """Test operations with zero-byte files"""
     # Create a zero-byte file
     zero_byte_file = temp_directory / "zero_byte.txt"
@@ -229,16 +183,16 @@ def test_zero_byte_file(buckia_client, temp_directory, cleanup_remote_files):
 
     # Verify file was downloaded and is zero bytes
     assert download_path.exists(), "Downloaded zero-byte file does not exist"
-    assert (
-        download_path.stat().st_size == 0
-    ), "Downloaded zero-byte file is not zero bytes"
+    assert download_path.stat().st_size == 0, "Downloaded zero-byte file is not zero bytes"
 
     # Delete zero-byte file
     delete_result = buckia_client.delete_file(remote_path)
     assert delete_result, "Zero-byte file deletion failed"
 
 
-def test_unicode_filenames(buckia_client, temp_directory, cleanup_remote_files):
+def test_unicode_filenames(
+    buckia_client: BuckiaClient, temp_directory: Path, cleanup_remote_files: Callable[[], None]
+) -> None:
     """Test operations with Unicode filenames"""
     # Create files with Unicode characters
     unicode_files = {
@@ -248,8 +202,8 @@ def test_unicode_filenames(buckia_client, temp_directory, cleanup_remote_files):
         "unicode_∞_infinity.txt": "Mathematical symbol file",
     }
 
-    local_files = {}
-    remote_paths = {}
+    local_files: Dict[str, Path] = {}
+    remote_paths: Dict[str, str] = {}
 
     # Create and upload the files
     for filename, content in unicode_files.items():
@@ -274,9 +228,7 @@ def test_unicode_filenames(buckia_client, temp_directory, cleanup_remote_files):
     # Check that files were uploaded and Unicode filenames preserved
     for filename, remote_path in remote_paths.items():
         if remote_path not in remote_files:
-            pytest.xfail(
-                f"Unicode filename not preserved in remote listing: {filename}"
-            )
+            pytest.xfail(f"Unicode filename not preserved in remote listing: {filename}")
 
     # Download and check content
     for filename, local_path in local_files.items():
@@ -284,9 +236,7 @@ def test_unicode_filenames(buckia_client, temp_directory, cleanup_remote_files):
         download_path = temp_directory / f"downloaded_{filename}"
 
         # Download the file
-        download_result = buckia_client.download_file(
-            remote_paths[filename], str(download_path)
-        )
+        download_result = buckia_client.download_file(remote_paths[filename], str(download_path))
         assert download_result, f"Download failed for Unicode file: {filename}"
 
         # Check content
@@ -309,13 +259,14 @@ def test_unicode_filenames(buckia_client, temp_directory, cleanup_remote_files):
     reason="Stress tests are resource-intensive and disabled by default",
 )
 def test_network_throttling(
-    buckia_client, test_file_factory, remote_test_prefix, cleanup_remote_files
-):
+    buckia_client: BuckiaClient,
+    test_file_factory: Callable[[str, int], Path],
+    remote_test_prefix: str,
+    cleanup_remote_files: Callable[[], None],
+) -> None:
     """Test operations with simulated network throttling"""
     # Create a large file for testing throttling
-    large_file = test_file_factory(
-        "large_throttled.bin", size=10 * 1024 * 1024
-    )  # 10 MB
+    large_file = test_file_factory("large_throttled.bin", size=10 * 1024 * 1024)  # 10 MB
 
     # Get original socket implementation
     import socket
@@ -325,20 +276,20 @@ def test_network_throttling(
     try:
         # Create a throttled socket implementation
         class ThrottledSocket(original_socket):
-            def __init__(self, *args, **kwargs):
+            def __init__(self, *args: Any, **kwargs: Any) -> None:
                 super().__init__(*args, **kwargs)
                 self.throttle_delay = 0.01  # 10ms delay per operation
 
-            def send(self, *args, **kwargs):
+            def send(self, *args: Any, **kwargs: Any) -> int:
                 time.sleep(self.throttle_delay)
                 return super().send(*args, **kwargs)
 
-            def recv(self, *args, **kwargs):
+            def recv(self, *args: Any, **kwargs: Any) -> bytes:
                 time.sleep(self.throttle_delay)
                 return super().recv(*args, **kwargs)
 
         # Patch socket implementation
-        socket.socket = ThrottledSocket
+        socket.socket = ThrottledSocket  # type: ignore
 
         # Upload the large file with throttled sockets
         remote_path = f"{remote_test_prefix}/large_throttled.bin"

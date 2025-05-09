@@ -2,6 +2,7 @@
 Unit tests for the sync factory module
 """
 
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -14,29 +15,29 @@ from buckia.sync.factory import create_sync_backend, get_sync_backend
 class MockSync(BaseSync):
     """Mock implementation of BaseSync for testing"""
 
-    def connect(self):
+    def connect(self) -> bool:
         return True
 
-    def test_connection(self):
+    def test_connection(self) -> dict[str, bool]:
         return {"test": True}
 
-    def list_remote_files(self, path=None):
+    def list_remote_files(self, _path: Optional[str] = None) -> dict[str, str]:
         return {}
 
-    def upload_file(self, local_file_path, remote_path):
+    def upload_file(self, _local_file_path: str, _remote_path: str) -> bool:
         return True
 
-    def download_file(self, remote_path, local_file_path):
+    def download_file(self, _remote_path: str, _local_file_path: str) -> bool:
         return True
 
-    def delete_file(self, remote_path):
+    def delete_file(self, _remote_path: str) -> bool:
         return True
 
-    def get_public_url(self, remote_path):
+    def get_public_url(self, remote_path: str) -> str:
         return f"https://example.com/{remote_path}"
 
 
-def test_create_sync_backend_no_provider():
+def test_create_sync_backend_no_provider() -> None:
     """Test factory with no provider specified"""
     config = BucketConfig(provider="", bucket_name="test-bucket")  # Empty provider
 
@@ -44,7 +45,7 @@ def test_create_sync_backend_no_provider():
     assert result is None
 
 
-def test_create_sync_backend_invalid_provider():
+def test_create_sync_backend_invalid_provider() -> None:
     """Test factory with invalid provider"""
     config = BucketConfig(provider="invalid-provider", bucket_name="test-bucket")
 
@@ -53,7 +54,7 @@ def test_create_sync_backend_invalid_provider():
 
 
 @patch("buckia.sync.factory.importlib.import_module")
-def test_create_sync_backend_dynamic_import_success(mock_import):
+def test_create_sync_backend_dynamic_import_success(mock_import: Any) -> None:
     """Test dynamic import of custom provider"""
     # Setup mock module with custom sync class
     mock_module = MagicMock()
@@ -76,7 +77,7 @@ def test_create_sync_backend_dynamic_import_success(mock_import):
 
 
 @patch("buckia.sync.factory.importlib.import_module")
-def test_create_sync_backend_dynamic_import_module_error(mock_import):
+def test_create_sync_backend_dynamic_import_module_error(mock_import: Any) -> None:
     """Test dynamic import with module import error"""
     mock_import.side_effect = ImportError("Module not found")
 
@@ -92,7 +93,7 @@ def test_create_sync_backend_dynamic_import_module_error(mock_import):
 
 
 @patch("buckia.sync.factory.importlib.import_module")
-def test_create_sync_backend_dynamic_import_attribute_error(mock_import):
+def test_create_sync_backend_dynamic_import_attribute_error(mock_import: Any) -> None:
     """Test dynamic import with attribute error"""
     # Setup mock module without the expected class
     mock_module = MagicMock(spec=[])  # No CustomSync attribute
@@ -110,7 +111,7 @@ def test_create_sync_backend_dynamic_import_attribute_error(mock_import):
 
 
 @patch("buckia.sync.factory.importlib.import_module")
-def test_create_sync_backend_exception(mock_import):
+def test_create_sync_backend_exception(mock_import: Any) -> None:
     """Test exception handling in factory"""
     # Setup mock to raise an unexpected exception
     mock_import.side_effect = RuntimeError("Unexpected error")
@@ -123,13 +124,13 @@ def test_create_sync_backend_exception(mock_import):
     assert result is None
 
 
-def test_get_sync_backend_alias():
+def test_get_sync_backend_alias() -> None:
     """Test that get_sync_backend is an alias of create_sync_backend"""
     assert get_sync_backend is create_sync_backend
 
 
 @patch("buckia.sync.bunny.BunnySync")
-def test_create_sync_backend_bunny(mock_bunny_sync):
+def test_create_sync_backend_bunny(mock_bunny_sync: Any) -> None:
     """Test creation of BunnySync backend"""
     mock_bunny_sync.return_value = "bunny-backend-instance"
 
@@ -145,7 +146,7 @@ def test_create_sync_backend_bunny(mock_bunny_sync):
 
 
 @pytest.mark.skip(reason="Requires special handling for import errors")
-def test_create_sync_backend_bunny_import_error():
+def test_create_sync_backend_bunny_import_error() -> None:
     """Test BunnySync with import error"""
     config = BucketConfig(provider="bunny", bucket_name="test-bucket")
 
@@ -162,7 +163,7 @@ def test_create_sync_backend_bunny_import_error():
 
 
 @pytest.mark.skip(reason="Requires special handling for module imports")
-def test_create_sync_backend_s3():
+def test_create_sync_backend_s3() -> None:
     """Test creation of S3Sync backend"""
     # Create a mock S3Sync class
     mock_s3_sync = MagicMock(return_value="s3-backend-instance")
@@ -190,7 +191,7 @@ def test_create_sync_backend_s3():
                 assert result == "s3-backend-instance"
 
 
-def test_create_sync_backend_s3_import_error():
+def test_create_sync_backend_s3_import_error() -> None:
     """Test S3Sync with import error"""
     config = BucketConfig(provider="s3", bucket_name="test-bucket")
 
@@ -210,7 +211,7 @@ def test_create_sync_backend_s3_import_error():
 
 
 @pytest.mark.skip(reason="Requires special handling for module imports")
-def test_create_sync_backend_linode():
+def test_create_sync_backend_linode() -> None:
     """Test creation of LinodeSync backend"""
     # Create a mock LinodeSync class
     mock_linode_sync = MagicMock(return_value="linode-backend-instance")
@@ -218,9 +219,7 @@ def test_create_sync_backend_linode():
     config = BucketConfig(provider="linode", bucket_name="test-bucket")
 
     # Patch the direct import in factory.py
-    with patch.object(
-        create_sync_backend, "__globals__", {"LinodeSync": mock_linode_sync}
-    ):
+    with patch.object(create_sync_backend, "__globals__", {"LinodeSync": mock_linode_sync}):
         with patch(
             "buckia.sync.factory.importlib.import_module",
             return_value=MagicMock(LinodeSync=mock_linode_sync),
@@ -234,7 +233,7 @@ def test_create_sync_backend_linode():
             assert result == "linode-backend-instance"
 
 
-def test_create_sync_backend_linode_import_error():
+def test_create_sync_backend_linode_import_error() -> None:
     """Test LinodeSync with import error"""
     config = BucketConfig(provider="linode", bucket_name="test-bucket")
 

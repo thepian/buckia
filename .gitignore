@@ -26,7 +26,6 @@ wheels/
 .pytest_cache/
 .coverage
 htmlcov/
-tests/config/test_config.yaml
 
 # Environments
 .env
@@ -46,3 +45,4 @@ venv.bak/
 # OS files
 .DS_Store
 Thumbs.db
+**/.claude/settings.local.json

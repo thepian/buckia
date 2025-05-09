@@ -4,9 +4,12 @@ Main client interface for Buckia
 
 import logging
 import os
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional, Union
 
-from .config import BucketConfig
+from .config import BucketConfig, BuckiaConfig
+
+# Import TokenManager for API token management
+from .security import TokenManager
 from .sync import SyncResult
 from .sync.factory import get_sync_backend
 
@@ -21,37 +24,118 @@ class BuckiaClient:
     This class provides a unified interface to different storage backends.
     """
 
-    def __init__(self, config: BucketConfig | Dict[str, Any] | str):
+    config: BucketConfig
+
+    def __init__(
+        self,
+        config: Union[BucketConfig, BuckiaConfig, Dict[str, Any], str],
+        bucket_name: Optional[str] = None,
+    ):
         """
         Initialize the client with configuration
 
         Args:
-            config: Configuration as BucketConfig object, dict, or path to config file
+            config: Configuration as BucketConfig, BuckiaConfig, dict, or path to config file
+            bucket_name: For BuckiaConfig, the name of the bucket configuration to use
+                         (required when using BuckiaConfig with multiple buckets)
         """
+        # Handle string path - could load either BucketConfig or BuckiaConfig
         if isinstance(config, str):
-            # Load from file
-            self.config = BucketConfig.from_file(config)
+            try:
+                # First try loading as a multi-bucket configuration
+                buckia_config = BuckiaConfig.from_file(config)
+
+                # If successful, select the appropriate bucket config
+                if bucket_name:
+                    if bucket_name in buckia_config:
+                        self.config = buckia_config[bucket_name]
+                    else:
+                        raise ValueError(
+                            f"Bucket configuration '{bucket_name}' not found in {config}"
+                        )
+                else:
+                    # Try to get the "default" bucket or the first one
+                    if "default" in buckia_config:
+                        self.config = buckia_config["default"]
+                    elif len(buckia_config.configs) == 1:
+                        # If there's only one bucket, use it
+                        self.config = next(iter(buckia_config.configs.values()))
+                    else:
+                        # Multiple buckets but no default
+                        available_buckets = ", ".join(buckia_config.configs.keys())
+                        raise ValueError(
+                            f"Multiple bucket configurations found in {config}. "
+                            f"Please specify bucket_name from: {available_buckets}"
+                        )
+            except (ValueError, KeyError):
+                # Fallback to loading as a single bucket configuration
+                logger.info(f"Loading {config} as a single bucket configuration")
+                self.config = BucketConfig.from_file(config)
+
+        # Handle BuckiaConfig
+        elif isinstance(config, BuckiaConfig):
+            buckia_config: BuckiaConfig = config
+            if bucket_name:
+                if bucket_name in config:
+                    self.config = config[bucket_name]
+                else:
+                    available_buckets = ", ".join(buckia_config.configs.keys())
+                    raise ValueError(
+                        f"Bucket configuration '{bucket_name}' not found. "
+                        f"Available buckets: {available_buckets}"
+                    )
+            else:
+                # Try to get the "default" bucket or the first one
+                if "default" in config:
+                    self.config = config["default"]
+                elif len(buckia_config.configs) == 1:
+                    # If there's only one bucket, use it
+                    self.config = next(iter(buckia_config.configs.values()))
+                else:
+                    # Multiple buckets but no default
+                    available_buckets = ", ".join(buckia_config.configs.keys())
+                    raise ValueError(
+                        f"Multiple bucket configurations found. "
+                        f"Please specify bucket_name from: {available_buckets}"
+                    )
+
+        # Handle dict (convert to BucketConfig)
         elif isinstance(config, Dict):
             # Create from dict
             if "provider" not in config or "bucket_name" not in config:
-                raise ValueError(
-                    "Configuration dict must contain 'provider' and 'bucket_name'"
-                )
+                raise ValueError("Configuration dict must contain 'provider' and 'bucket_name'")
             self.config = BucketConfig(**config)
+
+        # Handle BucketConfig
         elif isinstance(config, BucketConfig):
             # Use provided config
             self.config = config
+
         else:
             raise TypeError(
-                "Config must be a BucketConfig object, dict, or path to config file"
+                "Config must be a BucketConfig, BuckiaConfig, dict, or path to config file"
             )
+
+        # Check if we need to get credentials from token manager
+        if not self.config.credentials:
+            # Get bucket context name (default to provider name)
+            context = self.config.token_context or self.config.provider
+
+            try:
+                # Get token from keyring
+                token_manager = TokenManager(namespace="buckia")
+                token = token_manager.get_token(context)
+                if token:
+                    logger.info(f"Using API key from token manager for bucket context: {context}")
+                    # Use token for authentication
+                    self.config.credentials = {"api_key": token}
+            except Exception as e:
+                logger.warning(f"Failed to get token from keyring: {e}")
 
         # Create backend
         backend = get_sync_backend(self.config)
         if backend is None:
-            raise ValueError(
-                f"Failed to create sync backend for provider: {self.config.provider}"
-            )
+            raise ValueError(f"Failed to create sync backend for provider: {self.config.provider}")
         self.backend = backend  # Now backend is guaranteed to be non-None
 
         # Try to connect
@@ -68,7 +152,7 @@ class BuckiaClient:
         include_pattern: str | None = None,
         exclude_pattern: str | None = None,
         dry_run: bool = False,
-        progress_callback: Callable | None = None,
+        progress_callback: Optional[Callable[[int, int], None]] = None,
         sync_paths: list[str] | None = None,
     ) -> SyncResult:
         """
@@ -202,15 +286,17 @@ class BuckiaClient:
         """
         return self.backend.list_remote_files(path)
 
-    def close(self):
+    def close(self) -> None:
         """Close the client and release resources"""
         if hasattr(self.backend, "close"):
             self.backend.close()
 
-    def __enter__(self):
+    def __enter__(self) -> "BuckiaClient":
         """Support context manager protocol"""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self, exc_type: Optional[Exception], exc_val: Optional[type], exc_tb: Optional[Any]
+    ) -> None:
         """Close the client when exiting context"""
         self.close()

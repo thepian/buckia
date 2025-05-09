@@ -33,7 +33,7 @@ class SyncResult:
     protected_skipped: int = 0
     cached: int = 0  # Kept for backward compatibility but no longer used
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # Initialize errors list if None
         if self.errors is None:
             self.errors = []
@@ -56,6 +56,8 @@ class BaseSync(ABC):
     This defines the interface that all backend implementations must follow.
     """
 
+    config: BucketConfig
+
     def __init__(self, config: Dict[str, Any] | BucketConfig):
         """
         Initialize the sync backend with configuration
@@ -63,7 +65,7 @@ class BaseSync(ABC):
         Args:
             config: Configuration object with backend-specific configuration
         """
-        self.config = config
+        self.config = BucketConfig(**config) if isinstance(config, dict) else config
         self.logger = logging.getLogger(f"buckia.{self.__class__.__name__}")
 
     @abstractmethod
@@ -172,9 +174,7 @@ class BaseSync(ABC):
         elif algorithm == "sha1":
             hash_func = hashlib.sha1()
         else:
-            self.logger.warning(
-                f"Unsupported checksum algorithm: {algorithm}, using sha256"
-            )
+            self.logger.warning(f"Unsupported checksum algorithm: {algorithm}, using sha256")
             hash_func = hashlib.sha256()
 
         try:
@@ -233,9 +233,7 @@ class BaseSync(ABC):
                 # Single file
                 relative_path = os.path.relpath(sync_path_full, local_path_obj)
                 relative_path = relative_path.replace("\\", "/")
-                local_files[relative_path] = self.calculate_checksum(
-                    str(sync_path_full)
-                )
+                local_files[relative_path] = self.calculate_checksum(str(sync_path_full))
             elif sync_path_full.is_dir():
                 # Directory - get all files within
                 for root, _, files in os.walk(sync_path_full):
@@ -255,7 +253,7 @@ class BaseSync(ABC):
         max_workers: int = 4,
         delete_orphaned: bool = False,
         dry_run: bool = False,
-        progress_callback: Callable | None = None,
+        progress_callback: Callable[[int, int, str, str], None] | None = None,
         sync_paths: list[str] | None = None,
         include_pattern: str | None = None,
         exclude_pattern: str | None = None,
@@ -324,8 +322,7 @@ class BaseSync(ABC):
                     # If sync_paths is specified, only delete files within those paths
                     if sync_paths:
                         if any(
-                            remote_path.startswith(str(p).replace("\\", "/"))
-                            for p in sync_paths
+                            remote_path.startswith(str(p).replace("\\", "/")) for p in sync_paths
                         ):
                             to_delete.append(remote_path)
                             self.logger.debug(f"Orphaned file to delete: {remote_path}")
@@ -338,9 +335,7 @@ class BaseSync(ABC):
         for remote_path, remote_data in remote_files.items():
             # Skip if this file is in write-protected paths
             target_path = os.path.join(local_path, remote_path)
-            if protected_patterns and any(
-                target_path.startswith(p) for p in protected_patterns
-            ):
+            if protected_patterns and any(target_path.startswith(p) for p in protected_patterns):
                 self.logger.debug(f"Skipping write-protected file: {remote_path}")
                 result.protected_skipped += 1
                 continue
@@ -393,9 +388,7 @@ class BaseSync(ABC):
                 except Exception as e:
                     result.failed += 1
                     if result.errors is not None:
-                        result.errors.append(
-                            f"Error uploading {relative_path}: {str(e)}"
-                        )
+                        result.errors.append(f"Error uploading {relative_path}: {str(e)}")
 
         # Process downloads
         if to_download:
@@ -407,9 +400,7 @@ class BaseSync(ABC):
                 os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
 
                 if progress_callback:
-                    progress_callback(
-                        i + 1, len(to_download), "downloading", remote_path
-                    )
+                    progress_callback(i + 1, len(to_download), "downloading", remote_path)
 
                 try:
                     if self.download_file(remote_path, local_file_path):
@@ -421,9 +412,7 @@ class BaseSync(ABC):
                 except Exception as e:
                     result.failed += 1
                     if result.errors is not None:
-                        result.errors.append(
-                            f"Error downloading {remote_path}: {str(e)}"
-                        )
+                        result.errors.append(f"Error downloading {remote_path}: {str(e)}")
 
         # Process deletions
         if to_delete:

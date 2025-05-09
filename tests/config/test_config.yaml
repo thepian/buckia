@@ -1,0 +1,65 @@
+# Example test configuration for buckia integration tests
+
+# This file follows the BuckiaConfig format where multiple bucket configurations
+# can be defined with different names
+
+# Default test configuration (used when no specific bucket is requested)
+default:
+  # Provider to test
+  provider: "bunny" # Options: "bunny", "s3", "linode", "b2"
+
+  # Bucket/storage zone name
+  bucket_name: "buckia-test"
+
+  # Token context used for keyring
+  token_context: "demo" # Uses the common demo token for tests
+
+  # Sync configuration
+  delete_orphaned: true # Whether to delete remote files that don't exist locally
+  max_workers: 4 # Number of workers for parallel operations
+
+  # Advanced settings
+  checksum_algorithm: "sha256" # Algorithm for file checksums
+  conflict_resolution: "local_wins" # How to resolve conflicts between local and remote files
+
+  # Provider-specific settings for Bunny.net
+  provider_settings:
+    hostname: "storage.bunnycdn.com" # BunnyCDN storage hostname
+    region: "" # Storage region (empty string for default)
+    # Optional pull zone settings for CDN tests
+    # pull_zone_name: your-pull-zone-name
+    # cdn_url: https://your-cdn-url.b-cdn.net
+# Example of an additional test configuration for S3
+# Uncomment and customize if needed
+#s3_test:
+#  provider: "s3"
+#  bucket_name: "your-s3-bucket-name"
+#  token_context: "s3_demo"  # Uses a different token context for S3
+#  region: "us-east-1"
+#  sync:
+#    delete_orphaned: true
+#    max_workers: 4
+#  checksum_algorithm: "sha256"
+#  conflict_resolution: "local_wins"
+
+# Example of an additional test configuration for Linode Object Storage
+# Uncomment and customize if needed
+#linode_test:
+#  provider: "linode"
+#  bucket_name: "your-linode-bucket-name"
+#  token_context: "linode_demo"  # Uses a different token context for Linode
+#  region: "us-east-1"
+#  delete_orphaned: true
+#  max_workers: 4
+#  checksum_algorithm: "sha256"
+#  conflict_resolution: "local_wins"
+
+# Backblaze B2 configuration
+long_term:
+  provider: "b2"
+  bucket_name: "buckia-test" # The Backblaze B2 bucket ID: 81cffb4f05c7c201966b0b12
+  token_context: "long_term" # Uses the same demo token context as the default config
+  delete_orphaned: true
+  max_workers: 4
+  checksum_algorithm: "sha256"
+  conflict_resolution: "local_wins"

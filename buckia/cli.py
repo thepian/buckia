@@ -12,6 +12,9 @@ from typing import List
 from .client import BuckiaClient
 from .config import BucketConfig
 
+# Import TokenManager for API token management
+from .security import TokenManager
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -37,6 +40,21 @@ def cmd_sync(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for error)
     """
+    # Check for token_context parameter
+    if args.token_context:
+        try:
+            token_manager = TokenManager(namespace="buckia")
+            token = token_manager.get_token(args.token_context)
+            if token:
+                logger.info(f"Using token from keyring for bucket context: {args.token_context}")
+                # We'll use this later when loading the config
+            else:
+                logger.error(f"No token found for bucket context: {args.token_context}")
+                return 1
+        except Exception as e:
+            logger.error(f"Error retrieving token: {str(e)}")
+            return 1
+
     # Determine config file
     config_file = args.config
     if not config_file:
@@ -45,6 +63,16 @@ def cmd_sync(args: argparse.Namespace) -> int:
     try:
         # Load configuration
         config = BucketConfig.from_file(config_file)
+
+        # If token_context is specified, override the token_context in config
+        if args.token_context:
+            config.token_context = args.token_context
+
+            # If we already retrieved a token above, set it directly in credentials
+            if "token" in locals() and token:
+                if not config.credentials:
+                    config.credentials = {}
+                config.credentials["api_key"] = token
 
         # Create client
         client = BuckiaClient(config)
@@ -138,6 +166,102 @@ def cmd_status(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_token(args: argparse.Namespace) -> int:
+    """
+    Manage API tokens securely
+
+    Args:
+        args: Command-line arguments
+
+    Returns:
+        Exit code (0 for success, non-zero for error)
+    """
+    # TokenManager is now always available as keyring is a dependency
+
+    token_manager = TokenManager(namespace="buckia")
+
+    # If no subcommand is specified, show help
+    if not args.token_action:
+        print("Buckia Token Management")
+        print("\nUsage:")
+        print("  token set <context> [--token VALUE]  Save an API token for a bucket context")
+        print(
+            "  token get <context>                  Retrieve an API token (requires authentication)"
+        )
+        print("  token list                           List available bucket contexts with tokens")
+        print("  token delete <context>               Delete an API token")
+        print("\nExamples:")
+        print("  buckia token set bunny")
+        print("  buckia token get bunny")
+        print("  buckia token list")
+        print("  buckia token delete bunny")
+        print("\nBucket Contexts:")
+        print("  test      - BunnyCDN Storage API key")
+        print("  long_term - Backblaze B2 API key")
+        print("  other     - Linode Object Storage key")
+        print("  <custom>  - Any custom bucket context name")
+        return 0
+
+    try:
+        if args.token_action == "set":
+            # Get token from args or prompt
+            token = args.token
+            if not token:
+                import getpass
+
+                token = getpass.getpass(f"Enter API token for bucket context {args.context}: ")
+
+            # Save token
+            success = token_manager.save_token(args.context, token)
+            if success:
+                print(f"Token saved for bucket context: {args.context}")
+                return 0
+            else:
+                logger.error(f"Failed to save token for bucket context: {args.context}")
+                return 1
+
+        elif args.token_action == "get":
+            # Retrieve token
+            token = token_manager.get_token(args.context)
+            if token:
+                print(token)
+                return 0
+            else:
+                logger.error(
+                    f"No token found for bucket context: {args.context} or authentication failed"
+                )
+                return 1
+
+        elif args.token_action == "list":
+            # List available tokens
+            bucket_contexts = token_manager.list_bucket_contexts()
+            if bucket_contexts:
+                print("Available bucket contexts with tokens:")
+                for context in bucket_contexts:
+                    print(f"  - {context}")
+            else:
+                print("No tokens found")
+            return 0
+
+        elif args.token_action == "delete":
+            # Delete token
+            success = token_manager.delete_token(args.context)
+            if success:
+                print(f"Token deleted for bucket context: {args.context}")
+                return 0
+            else:
+                logger.error(f"Failed to delete token for bucket context: {args.context}")
+                return 1
+
+        else:
+            logger.error(f"Unknown token action: {args.token_action}")
+            return 1
+
+    except Exception as e:
+        logger.error(f"Error managing tokens: {str(e)}")
+        return 1
+
+
 def cmd_init(args: argparse.Namespace) -> int:
     """
     Initialize a new configuration file
@@ -164,13 +288,23 @@ def cmd_init(args: argparse.Namespace) -> int:
         config_params = {
             "provider": args.provider,
             "bucket_name": args.bucket_name,
-            "credentials": {
-                "api_key": args.api_key,
-            },
             "sync_paths": args.paths,
             "delete_orphaned": args.delete_orphaned,
             "region": args.region,
+            "token_context": args.token_context,
         }
+
+        # Only add credentials if API key is provided
+        if args.api_key:
+            config_params["credentials"] = {
+                "api_key": args.api_key,
+            }
+        elif args.token_context:
+            # If token_context is specified but no API key, just reference the token
+            # The actual token will be retrieved from keyring when needed
+            logger.info(
+                f"Configuration will use token from keyring for bucket context: {args.token_context}"
+            )
 
         # Remove None values
         config_params = {k: v for k, v in config_params.items() if v is not None}
@@ -198,9 +332,7 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
     Returns:
         Parsed arguments namespace
     """
-    parser = argparse.ArgumentParser(
-        description="Buckia - Storage bucket synchronization tool"
-    )
+    parser = argparse.ArgumentParser(description="Buckia - Storage bucket synchronization tool")
 
     # Common arguments
     parser.add_argument(
@@ -216,19 +348,37 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         help=f"Configuration file (default: {DEFAULT_CONFIG_FILE} in directory)",
     )
 
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Enable verbose output"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
     parser.add_argument("-q", "--quiet", action="store_true", help="Suppress output")
 
     # Subcommands
     subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
+    # Token command
+    token_parser = subparsers.add_parser("token", help="Manage API tokens securely")
+    token_subparsers = token_parser.add_subparsers(dest="token_action")
+
+    # Token set command
+    set_parser = token_subparsers.add_parser("set", help="Save an API token")
+    set_parser.add_argument("context", help="Bucket context name (e.g., 'bunny', 's3')")
+    set_parser.add_argument("--token", help="Token value (omit to enter securely)")
+
+    # Token get command
+    get_parser = token_subparsers.add_parser("get", help="Retrieve an API token")
+    get_parser.add_argument("context", help="Bucket context to retrieve token for")
+
+    # Token list command
+    token_subparsers.add_parser("list", help="List available bucket contexts with tokens")
+
+    # Token delete command
+    delete_parser = token_subparsers.add_parser("delete", help="Delete an API token")
+    delete_parser.add_argument("context", help="Bucket context to delete token for")
+
+    token_parser.set_defaults(func=cmd_token)
+
     # Sync command
-    sync_parser = subparsers.add_parser(
-        "sync", help="Synchronize files with remote storage"
-    )
+    sync_parser = subparsers.add_parser("sync", help="Synchronize files with remote storage")
     sync_parser.add_argument(
         "--paths",
         nargs="+",
@@ -259,6 +409,10 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         "--max-workers", type=int, help="Maximum number of concurrent operations"
     )
 
+    sync_parser.add_argument(
+        "--token-context", help="Name of bucket context to use for token retrieval"
+    )
+
     sync_parser.set_defaults(func=cmd_sync, delete_orphaned=None)
 
     # Status command
@@ -277,9 +431,7 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         help="Storage provider",
     )
 
-    init_parser.add_argument(
-        "--bucket-name", required=True, help="Name of the bucket/storage zone"
-    )
+    init_parser.add_argument("--bucket-name", required=True, help="Name of the bucket/storage zone")
 
     init_parser.add_argument("--api-key", help="API key for the storage provider")
 
@@ -297,6 +449,11 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
         "--delete-orphaned",
         action="store_true",
         help="Delete files on remote that don't exist locally",
+    )
+
+    init_parser.add_argument(
+        "--token-context",
+        help="Name of bucket context for token retrieval (defaults to provider name)",
     )
 
     init_parser.add_argument(

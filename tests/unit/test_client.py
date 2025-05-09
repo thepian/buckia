@@ -4,8 +4,7 @@ Unit tests for the BuckiaClient class
 
 import os
 import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import yaml
@@ -94,7 +93,6 @@ def test_client_init_with_dict():
     config_dict = {
         "provider": "test",
         "bucket_name": "test-bucket",
-        "credentials": {"api_key": "test-key"},
     }
 
     with patch("buckia.client.get_sync_backend") as mock_get_backend:
@@ -107,7 +105,6 @@ def test_client_init_with_dict():
         assert isinstance(client.config, BucketConfig)
         assert client.config.provider == "test"
         assert client.config.bucket_name == "test-bucket"
-        assert client.config.credentials == {"api_key": "test-key"}
 
         # Check the backend was created with the config
         mock_get_backend.assert_called_once()
@@ -124,9 +121,7 @@ def test_client_init_with_config_path():
         "auth": {"api_key": "test-key"},
     }
 
-    with tempfile.NamedTemporaryFile(
-        suffix=".yaml", mode="w", delete=False
-    ) as temp_file:
+    with tempfile.NamedTemporaryFile(suffix=".yaml", mode="w", delete=False) as temp_file:
         try:
             # Write config data to file
             yaml.dump(config_data, temp_file)
@@ -142,7 +137,6 @@ def test_client_init_with_config_path():
                 assert isinstance(client.config, BucketConfig)
                 assert client.config.provider == "test"
                 assert client.config.bucket_name == "test-bucket"
-                assert client.config.credentials == {"api_key": "test-key"}
 
                 # Check the backend was created with the config
                 mock_get_backend.assert_called_once()
