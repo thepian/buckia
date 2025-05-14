@@ -163,6 +163,8 @@ token_manager.delete_token("bunny")
 
 ## Development Commands
 
+### Python Package Development
+
 - Install dev dependencies: `uv pip install -e ".[bunny,s3,linode,dev]"`
 - Install additional dependencies: `uv pip install keyring python-dotenv`
 - Run all tests: `uv run scripts/run_tests.sh`
@@ -172,7 +174,72 @@ token_manager.delete_token("bunny")
 - Run specific test: `uv run -m pytest tests/integration/test_operations.py::test_file_upload_download`
 - Test with coverage: `uv run -m pytest --cov=buckia`
 
+### Swift Package Development (BuckiaKit)
+
+#### Prerequisites
+- Xcode 15+ or Swift 5.9+ command line tools
+- macOS 14+
+
+#### Building BuckiaKit
+```bash
+# Navigate to the BuckiaKit directory
+cd /Volumes/Projects/Evidently/buckia/BuckiaKit
+
+# Build the package
+swift build
+
+# Build in release mode
+swift build -c release
+```
+
+#### Running Tests
+```bash
+# Run all tests
+swift test
+
+# Run specific test
+swift test --filter BuckiaKitTests.BuckiaClientTests
+
+# Run tests with verbose output
+swift test --verbose
+
+# Run tests with code coverage
+swift test --enable-code-coverage
+```
+
+#### Generating Xcode Project
+```bash
+# Generate an Xcode project for development
+swift package generate-xcodeproj
+
+# Open the generated project
+open BuckiaKit.xcodeproj
+```
+
+#### Package Documentation
+```bash
+# Generate documentation (requires DocC plugin)
+swift package --allow-writing-to-directory ./docs \
+    generate-documentation --target BuckiaKit \
+    --output-path ./docs \
+    --transform-for-static-hosting \
+    --hosting-base-path BuckiaKit
+```
+
+#### Integration with iOS/macOS Projects
+```bash
+# For Swift Package Manager integration, add to Package.swift:
+dependencies: [
+    .package(url: "/path/to/BuckiaKit", from: "0.1.0")
+]
+
+# For Xcode projects, add through File > Add Packages...
+# using the local path: /Volumes/Projects/Evidently/buckia/BuckiaKit
+```
+
 ## Code Style Guidelines
+
+### Python Code Style
 
 - Use Python 3.7+ features (e.g., dataclasses, typing)
 - Follow PEP 8 naming conventions (snake_case for variables/functions, PascalCase for classes)
@@ -184,3 +251,46 @@ token_manager.delete_token("bunny")
 - Use Path from pathlib instead of string paths when feasible
 - Prefer explicit error messages in assertions
 - Avoid mutable default parameters in function definitions
+
+### Swift Code Style
+
+- Follow Swift API Design Guidelines (https://swift.org/documentation/api-design-guidelines/)
+- Use Swift 5.9+ features including async/await concurrency
+- Use Swift's native error handling (throwing functions) 
+- Prefer structs over classes for value semantics where appropriate
+- Use Swift's strong type system and avoid force unwrapping of optionals
+- Property and method naming:
+  - Methods that perform actions should use verbs (e.g., `download()`, `sync()`)
+  - Properties and methods that return values should use nouns (e.g., `configuration`, `tokens`)
+  - Boolean properties should read as assertions (e.g., `isConnected`, `hasToken`)
+- Use Swift's access control appropriately:
+  - `public` for API interfaces
+  - `internal` for implementation details (default)
+  - `private` for helpers only used within a single type
+  - `fileprivate` when needed for extensions within the same file
+- Document all public interfaces with doc comments (/// or /** */)
+- Use Swift Package Manager for dependency management
+- Organize code with extensions to enhance readability
+
+### Kotlin Code Style
+
+- Follow Kotlin official style guide (https://kotlinlang.org/docs/coding-conventions.html)
+- Use Kotlin 1.9+ features
+- Prefer immutability and data classes 
+- Use type inference where possible
+- Follow functional programming principles
+- Use null safety features and avoid nullable types when possible
+- Naming conventions:
+  - Use camelCase for function and variable names
+  - Use PascalCase for class and object names
+  - Use ALL_UPPERCASE for constants
+- Prefer extension functions over utility classes
+- Use sealed classes for representing restricted class hierarchies
+- Document public APIs with KDoc comments
+- Minimize mutability and prefer pure functions
+- Use Kotlin's standard library functions like `map()`, `filter()`, `fold()`
+- Leverage Kotlin's coroutines for asynchronous programming
+- Write idiomatic Kotlin that prioritizes readability and conciseness
+- Use companion objects for static-like functionality
+- Prefer composition over inheritance
+- Use property delegates for common property patterns

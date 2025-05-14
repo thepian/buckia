@@ -20,6 +20,9 @@ wheels/
 .installed.cfg
 *.egg
 
+# Swift
+BuckiaKit/.build/
+
 # Testing
 .ruff_cache/
 .mypy_cache/
