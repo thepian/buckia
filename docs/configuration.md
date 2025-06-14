@@ -1,6 +1,42 @@
-# Using BuckiaConfig for Multiple Bucket Configurations
+# Buckia Documentation
 
-Buckia now supports managing multiple bucket configurations in a single configuration file using the `BuckiaConfig` class. This makes it easier to work with multiple storage providers or environments (development, staging, production) from a single application.
+> **Note**: This file contains legacy documentation. See the new comprehensive documentation structure below.
+
+## Documentation Structure
+
+### Configuration Guides
+
+- **[Configuration Overview](configuration/overview.md)** - Complete configuration guide
+- **[Basic Setup](configuration/basic.md)** - Simple single-bucket configuration
+- **[Multi-Bucket Setup](configuration/multi-bucket.md)** - Multiple environment management
+- **[Team Organization](configuration/teams.md)** - Namespace and folder management
+- **[PDF Generation](configuration/pdf.md)** - HTML-to-PDF with cloud upload
+- **[Provider Settings](configuration/providers.md)** - Provider-specific configuration
+- **[Sync Behavior](configuration/sync.md)** - Advanced sync options
+- **[Security](configuration/security.md)** - Credential management and access control
+
+### CLI Reference
+
+- **[CLI Overview](cli/overview.md)** - Complete command reference
+- **[Sync Commands](cli/sync.md)** - File synchronization
+- **[PDF Commands](cli/pdf.md)** - PDF generation
+- **[Config Commands](cli/config.md)** - Configuration management
+- **[Auth Commands](cli/auth.md)** - Credential management
+- **[User Commands](cli/user.md)** - User management
+- **[System Commands](cli/system.md)** - System operations
+
+### Operations Guides
+
+- **[Team Management](operations/teams.md)** - Multi-team workflows
+- **[Monitoring](operations/monitoring.md)** - Usage tracking and analytics
+- **[Troubleshooting](operations/troubleshooting.md)** - Common issues and solutions
+- **[Best Practices](operations/best-practices.md)** - Recommended workflows
+
+---
+
+# Legacy Documentation: Using BuckiaConfig for Multiple Bucket Configurations
+
+Buckia supports managing multiple bucket configurations in a single configuration file using the `BuckiaConfig` class. This makes it easier to work with multiple storage providers or environments (development, staging, production) from a single application.
 
 ## Configuration File Format
 

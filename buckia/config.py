@@ -41,6 +41,9 @@ class BucketConfig:
         default_factory=dict
     )  # Additional provider-specific settings
 
+    # PDF generation settings
+    pdf: Dict[str, Any] = field(default_factory=dict)  # PDF generation configuration
+
     @classmethod
     def from_file(cls, config_path: str) -> "BucketConfig":
         """
@@ -106,6 +109,9 @@ class BucketConfig:
         conflict_resolution = config_data.get("conflict_resolution", "local_wins")
         region = config_data.get("region")
 
+        # Extract PDF settings
+        pdf_settings = config_data.get("pdf", {})
+
         # Any other provider-specific settings
         provider_settings = {
             k: v
@@ -120,6 +126,7 @@ class BucketConfig:
                 "checksum_algorithm",
                 "conflict_resolution",
                 "region",
+                "pdf",
             )
         }
 
@@ -134,6 +141,7 @@ class BucketConfig:
             conflict_resolution=conflict_resolution,
             region=region,
             provider_settings=provider_settings,
+            pdf=pdf_settings,
         )
 
     def save(self, config_path: str) -> None:
@@ -155,6 +163,10 @@ class BucketConfig:
         # Add token_context if specified
         if self.token_context:
             config_data["token_context"] = self.token_context
+
+        # Add PDF settings if present
+        if self.pdf:
+            config_data["pdf"] = self.pdf
 
         # Add provider-specific settings
         for key, value in self.provider_settings.items():
@@ -291,6 +303,9 @@ class BuckiaConfig:
             conflict_resolution = bucket_data.get("conflict_resolution", "local_wins")
             region = bucket_data.get("region")
 
+            # PDF settings
+            pdf_settings = bucket_data.get("pdf", {})
+
             # Provider-specific settings (any remaining keys)
             provider_settings = {
                 k: v
@@ -305,6 +320,7 @@ class BuckiaConfig:
                     "checksum_algorithm",
                     "conflict_resolution",
                     "region",
+                    "pdf",
                 )
             }
 
@@ -320,6 +336,7 @@ class BuckiaConfig:
                 conflict_resolution=conflict_resolution,
                 region=region,
                 provider_settings=provider_settings,
+                pdf=pdf_settings,
             )
 
             buckia_config.configs[bucket_name] = bucket_config
@@ -356,6 +373,10 @@ class BuckiaConfig:
             # Add region if specified
             if bucket_config.region:
                 bucket_data["region"] = bucket_config.region
+
+            # Add PDF settings if present
+            if bucket_config.pdf:
+                bucket_data["pdf"] = bucket_config.pdf
 
             # Add provider-specific settings
             for key, value in bucket_config.provider_settings.items():

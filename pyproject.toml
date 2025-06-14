@@ -36,6 +36,7 @@ dependencies = [
     "keyring>=24.0.0",
     "pytest>=8.3.5",
     "python-dotenv>=1.1.0",
+    "weasyprint>=65.1",
 ]
 dynamic = ["version"]
 
@@ -44,6 +45,7 @@ bunny = ["bunnycdnpython>=0.0.8"]
 s3 = ["boto3>=1.17.0"]
 linode = ["linode-api4>=5.0.0"]
 b2 = ["b2sdk>=2.8.0,<3"]
+pdf = ["weasyprint>=62.0"]
 dev = [
     "pytest>=6.2.0",
     "pytest-cov>=2.10.1",

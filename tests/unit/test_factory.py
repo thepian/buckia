@@ -2,7 +2,7 @@
 Unit tests for the sync factory module
 """
 
-from typing import Any
+from typing import Any, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest

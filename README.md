@@ -501,6 +501,7 @@ Project-related documentation.
 
 - [Changelog](docs/CHANGES.md) - Version history and changes
 - [Roadmap](docs/project/roadmap.md) - Future development plans
+- [Repomix](https://repomix.com/) - Run `npx repomix` to update the LLM index.
 
 ## Mobile Platform Documentation
 

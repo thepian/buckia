@@ -24,6 +24,13 @@ uv run -m pytest tests/integration/test_operations.py::test_file_upload_download
 
 # Test with coverage
 uv run -m pytest --cov=buckia
+
+# Test CLI help functionality
+uv run python scripts/test_cli_help.py
+
+# Test CLI help with pytest
+uv run -m pytest tests/unit/test_cli_help.py
+uv run -m pytest tests/integration/test_cli_help.py
 ```
 
 ### Test Options

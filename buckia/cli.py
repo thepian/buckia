@@ -322,6 +322,75 @@ def cmd_init(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_pdf(args: argparse.Namespace) -> int:
+    """
+    Render HTML to PDF and upload to bucket
+
+    Args:
+        args: Command-line arguments
+
+    Returns:
+        Exit code (0 for success, non-zero for error)
+    """
+    # Check if subcommand is provided
+    if not hasattr(args, "pdf_action") or not args.pdf_action:
+        print("Buckia PDF Management")
+        print("\nUsage:")
+        print("  pdf render <html-file> <bucket-name> <unguessable-id> <pdf-filename>")
+        print("\nExample:")
+        print(
+            "  buckia pdf render whitepaper.html thepia-cdn a7f3c8e9-2d4b-4c1a-9e8f-1b2c3d4e5f6a hidden-cost-brief"
+        )
+        return 0
+
+    if args.pdf_action == "render":
+        try:
+            # Import PDF module (may fail if WeasyPrint not installed)
+            from .pdf import render_pdf_command
+
+            # Determine config file
+            config_file = args.config
+            if not config_file:
+                config_file = os.path.join(args.directory, DEFAULT_CONFIG_FILE)
+
+            # Render PDF
+            result = render_pdf_command(
+                html_file_path=args.html_file,
+                bucket_name=args.bucket_name,
+                unguessable_id=args.unguessable_id,
+                pdf_filename=args.pdf_filename,
+                config_file=config_file,
+                local_only=getattr(args, "local_only", False),
+                output_dir=getattr(args, "output_dir", None),
+                css_override=getattr(args, "css_override", None),
+            )
+
+            # Print results
+            if not args.quiet:
+                print(f"PDF rendered successfully:")
+                print(f"  Local file: {result['local_path']}")
+                print(f"  Size: {result['size_bytes'] / 1024:.1f} KB")
+
+                if result["upload_success"]:
+                    print(f"  Uploaded to: {result['remote_path']}")
+                    print(f"  Public URL: {result['url']}")
+                else:
+                    print(f"  Upload failed: {result.get('error', 'Unknown error')}")
+                    return 1
+
+            return 0
+
+        except ImportError as e:
+            logger.error("WeasyPrint not available. Install with: pip install buckia[pdf]")
+            return 1
+        except Exception as e:
+            logger.error(f"Error rendering PDF: {str(e)}")
+            return 1
+    else:
+        logger.error(f"Unknown PDF action: {args.pdf_action}")
+        return 1
+
+
 def parse_args(args: list[str] | None = None) -> argparse.Namespace:
     """
     Parse command-line arguments
@@ -461,6 +530,34 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
     )
 
     init_parser.set_defaults(func=cmd_init)
+
+    # PDF command
+    pdf_parser = subparsers.add_parser("pdf", help="Render HTML to PDF and upload to bucket")
+    pdf_subparsers = pdf_parser.add_subparsers(dest="pdf_action", help="PDF action to execute")
+
+    # PDF render command
+    render_parser = pdf_subparsers.add_parser("render", help="Render HTML file or URL to PDF")
+    render_parser.add_argument(
+        "html_file", help="Path to HTML file to render OR URL to fetch HTML from"
+    )
+    render_parser.add_argument("bucket_name", help="Name of bucket configuration to use")
+    render_parser.add_argument("unguessable_id", help="Unique identifier for PDF path")
+    render_parser.add_argument(
+        "pdf_filename", help="Name for output PDF file (without .pdf extension)"
+    )
+    render_parser.add_argument(
+        "--local-only", action="store_true", help="Generate PDF locally without uploading to bucket"
+    )
+    render_parser.add_argument(
+        "--output-dir",
+        help="Directory to save PDF when using --local-only (default: current directory)",
+    )
+    render_parser.add_argument(
+        "--css-override",
+        help="Path to additional CSS file to inject into HTML before PDF generation",
+    )
+
+    pdf_parser.set_defaults(func=cmd_pdf)
 
     # Parse arguments
     parsed_args = parser.parse_args(args)
