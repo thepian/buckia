@@ -371,12 +371,16 @@ def cmd_pdf(args: argparse.Namespace) -> int:
                 print(f"  Local file: {result['local_path']}")
                 print(f"  Size: {result['size_bytes'] / 1024:.1f} KB")
 
-                if result["upload_success"]:
-                    print(f"  Uploaded to: {result['remote_path']}")
-                    print(f"  Public URL: {result['url']}")
+                # Only check upload status if not in local-only mode
+                if not getattr(args, "local_only", False):
+                    if result["upload_success"]:
+                        print(f"  Uploaded to: {result['remote_path']}")
+                        print(f"  Public URL: {result['url']}")
+                    else:
+                        print(f"  Upload failed: {result.get('error', 'Unknown error')}")
+                        return 1
                 else:
-                    print(f"  Upload failed: {result.get('error', 'Unknown error')}")
-                    return 1
+                    print("  Local-only mode: No upload attempted")
 
             return 0
 
