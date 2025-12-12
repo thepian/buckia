@@ -81,6 +81,17 @@ buckia auth test CONTEXT
 - Support for multiple provider contexts
 - Secure credential storage and testing
 
+### Keyring Operations
+
+```bash
+# Export secrets as environment variables
+eval $(buckia keyring to env)
+```
+
+- securely export secrets from Keychain to environment variables
+- supports generic and specific account names
+
+
 ## Enterprise Commands (Planned)
 
 ### User Management

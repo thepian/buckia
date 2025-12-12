@@ -262,6 +262,120 @@ def cmd_token(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_keyring(args: argparse.Namespace) -> int:
+    """
+    Manage keyring operations
+    """
+    if not hasattr(args, "keyring_action") or not args.keyring_action:
+        print("Buckia Keyring Management")
+        print("\nUsage:")
+        print("  keyring to env")
+        return 0
+
+    if args.keyring_action == "to":
+        if not hasattr(args, "keyring_to_target") or args.keyring_to_target != "env":
+            logger.error("Unknown target. Usage: buckia keyring to env")
+            return 1
+
+        # Determine config file
+        config_file = args.config
+        if not config_file:
+            config_file = os.path.join(args.directory, DEFAULT_CONFIG_FILE)
+
+        try:
+            # Load configuration
+            config = BucketConfig.from_file(config_file)
+
+            # Use 'thepia' as default prefix
+            prefix = "thepia"
+
+            # Keyring envs from config
+            keyring_envs = getattr(config, "keyring_envs", [])
+
+            import platform
+            import subprocess
+
+            import keyring
+
+            results = []
+
+            for env_item in keyring_envs:
+                if isinstance(env_item, str):
+                    env_name = env_item
+                    service = f"{prefix}/{env_name}"
+                elif isinstance(env_item, dict):
+                    # Handle advanced config if needed in future
+                    # For now assume simple dict with name
+                    env_name = env_item.get("name", "")
+                    if not env_name:
+                        continue
+                    service = env_item.get("service", f"{prefix}/{env_name}")
+                else:
+                    continue
+
+                # Default accounts to try if discovery fails or isn't possible
+                default_accounts = ["api_token", "default", "token", "admin", "password"]
+
+                found_account = None
+                found_password = None
+
+                # 1. Try to find the account using platform tools (macOS security)
+                if platform.system() == "Darwin":
+                    try:
+                        # Find generic password for service
+                        cmd = ["security", "find-generic-password", "-s", service, "-g"]
+                        result = subprocess.run(cmd, capture_output=True, text=True)
+
+                        if result.returncode == 0:
+                            # Parse output to find account ("acct")
+                            import re
+
+                            acct_match = re.search(r'"acct"<blob>="(.*?)"', result.stdout)
+                            if acct_match:
+                                found_account = acct_match.group(1)
+
+                            # Password is usually in stderr or stdout depending on version/flags
+                            # With -g, password is in stderr: password: "..."
+                            pwd_match = re.search(r'password: "(.*?)"', result.stderr)
+                            if pwd_match:
+                                found_password = pwd_match.group(1)
+                    except Exception:
+                        pass
+
+                # 2. If nothing found via CLI, try default accounts with keyring package
+                if not found_password:
+                    for acc in default_accounts:
+                        pwd = keyring.get_password(service, acc)
+                        if pwd:
+                            found_account = acc
+                            found_password = pwd
+                            break
+
+                # 3. Output result
+                if found_password:
+                    # Heuristic for generic vs specific account
+                    is_placeholder = found_account in default_accounts or found_account == "default"
+
+                    if is_placeholder:
+                        results.append(f'export {env_name}="{found_password}"')
+                    else:
+                        results.append(f'export {env_name}="{found_account}:{found_password}"')
+                else:
+                    logger.warning(f"Could not find keyring entry for {service}")
+
+            # Print all exports
+            for line in results:
+                print(line)
+
+            return 0
+
+        except Exception as e:
+            logger.error(f"Error processing keyring envs: {e}")
+            return 1
+
+    return 0
+
+
 def cmd_init(args: argparse.Namespace) -> int:
     """
     Initialize a new configuration file
@@ -449,6 +563,20 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
     delete_parser.add_argument("context", help="Bucket context to delete token for")
 
     token_parser.set_defaults(func=cmd_token)
+
+    # Keyring command
+    keyring_parser = subparsers.add_parser("keyring", help="Manage keyring operations")
+    keyring_subparsers = keyring_parser.add_subparsers(dest="keyring_action")
+
+    # Keyring to ...
+    to_parser = keyring_subparsers.add_parser(
+        "to", help="Export keyring secrets as environment variables"
+    )
+    to_parser.add_argument(
+        "keyring_to_target", choices=["env"], help="Export target format"
+    )  # using positional arg for 'env'
+
+    keyring_parser.set_defaults(func=cmd_keyring)
 
     # Sync command
     sync_parser = subparsers.add_parser("sync", help="Synchronize files with remote storage")

@@ -6,7 +6,7 @@ This document outlines the consolidation of documentation to reflect the new PDF
 
 ### **Main README.md**
 - ✅ Added comprehensive PDF Generation System section
-- ✅ Updated command table with `pnpm build:pdf-only`
+- ✅ Updated command table with `pnpm build:pdf`
 - ✅ Documented three build modes (Production, Development, PDF)
 - ✅ Included architecture overview and technical details
 
@@ -53,7 +53,7 @@ rm docs/content/evidently-*.md               # Historical reference
 
 ### **Package.json Scripts Documentation**
 - ✅ Updated to remove legacy `dev:with-local-api` references
-- ✅ Added `build:pdf-only` script documentation
+- ✅ Added `build:pdf` script documentation
 
 ### **Test Documentation**
 - ✅ Updated test files to reference `dev:local` instead of `dev:with-local-api`

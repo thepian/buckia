@@ -44,6 +44,11 @@ class BucketConfig:
     # PDF generation settings
     pdf: Dict[str, Any] = field(default_factory=dict)  # PDF generation configuration
 
+    # Environment variable extraction from keyring
+    keyring_envs: List[str | Dict[str, str]] = field(
+        default_factory=list
+    )  # List of env vars to load from keyring
+
     @classmethod
     def from_file(cls, config_path: str) -> "BucketConfig":
         """
@@ -112,6 +117,9 @@ class BucketConfig:
         # Extract PDF settings
         pdf_settings = config_data.get("pdf", {})
 
+        # Extract keyring envs
+        keyring_envs = config_data.get("keyring_envs", [])
+
         # Any other provider-specific settings
         provider_settings = {
             k: v
@@ -130,7 +138,7 @@ class BucketConfig:
             )
         }
 
-        return cls(
+        config_obj = cls(
             provider=provider,
             bucket_name=bucket_name,
             token_context=token_context,
@@ -142,7 +150,51 @@ class BucketConfig:
             region=region,
             provider_settings=provider_settings,
             pdf=pdf_settings,
+            keyring_envs=keyring_envs,
         )
+
+        return cls._resolve_secrets(config_obj)
+
+    @classmethod
+    def _resolve_secrets(cls, config: "BucketConfig") -> "BucketConfig":
+        """
+        Resolve secrets in the configuration using keyring
+        """
+        import keyring
+
+        def resolve_value(value: Any) -> Any:
+            if isinstance(value, str) and value.startswith("keyring:"):
+                try:
+                    # Format: keyring:service/username
+                    parts = value[8:].split("/", 1)
+                    if len(parts) == 2:
+                        service, username = parts
+                        secret = keyring.get_password(service, username)
+                        if secret:
+                            return secret
+                        else:
+                            logger.warning(f"Secret not found in keyring: {service}/{username}")
+                            return value
+                    else:
+                        logger.warning(f"Invalid keyring reference format: {value}")
+                        return value
+                except Exception as e:
+                    logger.warning(f"Error resolving keyring secret {value}: {e}")
+                    return value
+            elif isinstance(value, dict):
+                return {k: resolve_value(v) for k, v in value.items()}
+            elif isinstance(value, list):
+                return [resolve_value(v) for v in value]
+            return value
+
+        # Resolve secrets in all fields
+        config.bucket_name = resolve_value(config.bucket_name)
+        config.token_context = resolve_value(config.token_context)
+        config.credentials = resolve_value(config.credentials)
+        config.provider_settings = resolve_value(config.provider_settings)
+        # Note: We don't resolve secrets in other fields as they are unlikely to contain secrets
+
+        return config
 
     def save(self, config_path: str) -> None:
         """Save configuration to a YAML or JSON file"""
@@ -167,6 +219,10 @@ class BucketConfig:
         # Add PDF settings if present
         if self.pdf:
             config_data["pdf"] = self.pdf
+
+        # Add keyring envs if present
+        if self.keyring_envs:
+            config_data["keyring_envs"] = self.keyring_envs
 
         # Add provider-specific settings
         for key, value in self.provider_settings.items():
@@ -343,6 +399,10 @@ class BuckiaConfig:
 
         if not buckia_config.configs:
             raise ValueError(f"No valid bucket configurations found in {config_path}")
+
+        # Resolve secrets for all loaded configs
+        for bucket_name, bucket_config in buckia_config.configs.items():
+            buckia_config.configs[bucket_name] = BucketConfig._resolve_secrets(bucket_config)
 
         return buckia_config
 

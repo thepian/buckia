@@ -200,30 +200,20 @@ Development, Admin and Server Scripts are written in Python using the library al
 
 Buckia follows a pluggable architecture with the following components:
 
-```
-                   ┌─────────────────┐
-                   │  Buckia Client  │
-                   └────────┬────────┘
-                            │
-          ┌────────────────┼────────────────┐
-          │                │                │
-┌─────────▼─────────┐     │         ┌──────▼─────────┐
-│ Local File Manager│     │         │ Remote Manager │
-└─────────┬─────────┘     │         └──────┬─────────┘
-          │         ┌─────▼────┐            │
-          │         │ Sync     │            │
-          └─────────► Manager  ◄────────────┘
-                    └──────────┘
-                          │
-                   ┌──────▼───────┐
-                   │ Bucket       │
-                   │ Adapters     │
-                   └──────────────┘
-                         / \
-                        /   \
-   ┌──────────────────┐/     \┌──────────────┐┌──────────────┐
-   │  Bunny Adapter   │       │ S3 Adapter   ││Linode Adapter│
-   └──────────────────┘       └──────────────┘└──────────────┘
+```mermaid
+graph TD
+    Client[Buckia Client] --> Local[Local File Manager]
+    Client --> Sync[Sync Manager]
+    Client --> Remote[Remote Manager]
+
+    Local --> Sync
+    Remote --> Sync
+
+    Sync --> Adapters[Bucket Adapters]
+
+    Adapters --> Bunny[Bunny Adapter]
+    Adapters --> S3[S3 Adapter]
+    Adapters --> Linode[Linode Adapter]
 ```
 
 ### Backend-Independent Design
@@ -447,6 +437,14 @@ pip install buckia[linode] # For Linode Object Storage support
 pip install buckia[bunny,s3,linode,dev]
 ```
 
+### Development Installation
+
+To install Buckia globally while keeping it linked to your local source code (changes are reflected immediately):
+
+```bash
+uv tool install --editable --force .
+```
+
 ## Project Structure
 
 ```
@@ -472,9 +470,9 @@ This directory contains all documentation for the Buckia project. The documentat
 
 Documentation for end users of Buckia.
 
-- [Getting Started](docs/user/getting-started.md) - Introduction and basic usage
-- [Configuration Guide](docs/user/configuration.md) - Detailed configuration options
-- [CLI Reference](docs/user/cli-reference.md) - Command line interface usage
+- [Getting Started](docs/cli/overview.md) - Introduction and basic usage
+- [Configuration Guide](docs/configuration.md) - Detailed configuration options
+- [CLI Reference](docs/cli/overview.md) - Command line interface usage
 - [Authentication](docs/user/authentication.md) - Secure token handling and authentication
 
 ## Developer Documentation

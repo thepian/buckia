@@ -48,6 +48,9 @@ default:
   provider: bunny
   bucket_name: my-dev-storage
   token_context: demo
+  keyring_envs:
+    - MY_TOKEN
+    - DOCKER_HUB
   delete_orphaned: false
   max_workers: 4
   checksum_algorithm: sha256
