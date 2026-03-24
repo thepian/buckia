@@ -9,6 +9,7 @@ import os
 import sys
 from typing import List
 
+from . import __version__
 from .client import BuckiaClient
 from .config import BucketConfig
 
@@ -74,6 +75,10 @@ def cmd_sync(args: argparse.Namespace) -> int:
                     config.credentials = {}
                 config.credentials["api_key"] = token
 
+        # Apply CLI overrides to config before creating client
+        if args.upload_only:
+            config.upload_only = True
+
         # Create client
         client = BuckiaClient(config)
 
@@ -94,6 +99,15 @@ def cmd_sync(args: argparse.Namespace) -> int:
 
         if args.max_workers:
             sync_params["max_workers"] = args.max_workers
+
+        if args.include_pattern:
+            sync_params["include_pattern"] = args.include_pattern
+
+        if args.exclude_pattern:
+            sync_params["exclude_pattern"] = args.exclude_pattern
+
+        if args.force_full_sync:
+            sync_params["force_full_sync"] = args.force_full_sync
 
         # Run synchronization
         result = client.sync(**sync_params)
@@ -537,6 +551,8 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
 
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
 
+    parser.add_argument("--version", action="version", version=f"buckia {__version__}")
+
     parser.add_argument("-q", "--quiet", action="store_true", help="Suppress output")
 
     # Subcommands
@@ -612,6 +628,24 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
 
     sync_parser.add_argument(
         "--token-context", help="Name of bucket context to use for token retrieval"
+    )
+
+    sync_parser.add_argument("--include-pattern", help="Regex pattern for files to include")
+
+    sync_parser.add_argument("--exclude-pattern", help="Regex pattern for files to exclude")
+
+    sync_parser.add_argument(
+        "--upload-only",
+        action="store_true",
+        default=False,
+        help="Only upload files; never download from remote",
+    )
+
+    sync_parser.add_argument(
+        "--force-full-sync",
+        action="store_true",
+        default=False,
+        help="Ignore local state cache and recompute all checksums",
     )
 
     sync_parser.set_defaults(func=cmd_sync, delete_orphaned=None)

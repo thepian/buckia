@@ -1,3 +1,46 @@
+# Agent Instructions
+
+This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
+
+## Quick Reference
+
+```bash
+bd ready              # Find available work
+bd show <id>          # View issue details
+bd update <id> --status in_progress  # Claim work
+bd close <id>         # Complete work
+bd sync               # Sync with git
+```
+
+## Landing the Plane (Session Completion)
+
+**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+
+**MANDATORY WORKFLOW:**
+
+1. **File issues for remaining work** - Create issues for anything that needs follow-up
+2. **Run quality gates** (if code changed) - Tests, linters, builds
+3. **Update issue status** - Close finished work, update in-progress items
+4. **PUSH TO REMOTE** - This is MANDATORY:
+   ```bash
+   git pull --rebase
+   bd sync
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+5. **Clean up** - Clear stashes, prune remote branches
+6. **Verify** - All changes committed AND pushed
+7. **Hand off** - Provide context for next session
+
+**CRITICAL RULES:**
+- Work is NOT complete until `git push` succeeds
+- NEVER stop before pushing - that leaves work stranded locally
+- NEVER say "ready to push when you are" - YOU must push
+- If push fails, resolve and retry until it succeeds
+
+---
+
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -174,69 +217,6 @@ token_manager.delete_token("bunny")
 - Run specific test: `uv run -m pytest tests/integration/test_operations.py::test_file_upload_download`
 - Test with coverage: `uv run -m pytest --cov=buckia`
 
-### Swift Package Development (BuckiaKit)
-
-#### Prerequisites
-- Xcode 15+ or Swift 5.9+ command line tools
-- macOS 14+
-
-#### Building BuckiaKit
-```bash
-# Navigate to the BuckiaKit directory
-cd /Volumes/Projects/Evidently/buckia/BuckiaKit
-
-# Build the package
-swift build
-
-# Build in release mode
-swift build -c release
-```
-
-#### Running Tests
-```bash
-# Run all tests
-swift test
-
-# Run specific test
-swift test --filter BuckiaKitTests.BuckiaClientTests
-
-# Run tests with verbose output
-swift test --verbose
-
-# Run tests with code coverage
-swift test --enable-code-coverage
-```
-
-#### Generating Xcode Project
-```bash
-# Generate an Xcode project for development
-swift package generate-xcodeproj
-
-# Open the generated project
-open BuckiaKit.xcodeproj
-```
-
-#### Package Documentation
-```bash
-# Generate documentation (requires DocC plugin)
-swift package --allow-writing-to-directory ./docs \
-    generate-documentation --target BuckiaKit \
-    --output-path ./docs \
-    --transform-for-static-hosting \
-    --hosting-base-path BuckiaKit
-```
-
-#### Integration with iOS/macOS Projects
-```bash
-# For Swift Package Manager integration, add to Package.swift:
-dependencies: [
-    .package(url: "/path/to/BuckiaKit", from: "0.1.0")
-]
-
-# For Xcode projects, add through File > Add Packages...
-# using the local path: /Volumes/Projects/Evidently/buckia/BuckiaKit
-```
-
 ## Code Style Guidelines
 
 ### Python Code Style
@@ -251,26 +231,6 @@ dependencies: [
 - Use Path from pathlib instead of string paths when feasible
 - Prefer explicit error messages in assertions
 - Avoid mutable default parameters in function definitions
-
-### Swift Code Style
-
-- Follow Swift API Design Guidelines (https://swift.org/documentation/api-design-guidelines/)
-- Use Swift 5.9+ features including async/await concurrency
-- Use Swift's native error handling (throwing functions) 
-- Prefer structs over classes for value semantics where appropriate
-- Use Swift's strong type system and avoid force unwrapping of optionals
-- Property and method naming:
-  - Methods that perform actions should use verbs (e.g., `download()`, `sync()`)
-  - Properties and methods that return values should use nouns (e.g., `configuration`, `tokens`)
-  - Boolean properties should read as assertions (e.g., `isConnected`, `hasToken`)
-- Use Swift's access control appropriately:
-  - `public` for API interfaces
-  - `internal` for implementation details (default)
-  - `private` for helpers only used within a single type
-  - `fileprivate` when needed for extensions within the same file
-- Document all public interfaces with doc comments (/// or /** */)
-- Use Swift Package Manager for dependency management
-- Organize code with extensions to enhance readability
 
 ### Kotlin Code Style
 

@@ -2,10 +2,6 @@
 
 This directory contains comprehensive documentation for the Buckia project - a unified storage synchronization tool with cloud bucket support, PDF generation capabilities, and design analysis features.
 
-## 📖 **Documentation Standards**
-
-All Buckia documentation follows the [Thepia Documentation Standards](documentation-reference-template.md). When creating or updating documentation, reference these guidelines for consistency.
-
 ## 🏗️ **Core Documentation**
 
 ### **Getting Started**
@@ -23,29 +19,24 @@ All Buckia documentation follows the [Thepia Documentation Standards](documentat
 ### **Features & Capabilities**
 
 - [Security Features](features/security.md) - Authentication and access control
-- [PDF Best Practices](pdf-best-practices.md) - Professional PDF styling guidelines
-- [WeasyPrint Integration](whitepaper-pdf-generation.md) - HTML-to-PDF conversion
+- [Sync Features](features/sync.md) - Upload-only, create-only patterns, state cache
+- [Python API Reference](api-reference.md) - Python library usage
+- [PDF Best Practices](pdf/best-practices.md) - Professional PDF styling guidelines
 
-## 🎨 **Design & Analysis**
+## 🎨 **PDF Documentation**
 
-### **PDF Analysis & Design Quality**
-
-- [Visual Design Quality Evaluation Project](visual-design-quality-evaluation-project.md) - Comprehensive design analysis initiative
-- [PDF Design System Analysis](pdf-design-system-analysis.md) - Design token extraction framework
-- [Buckia PDF Analysis Extension](buckia-pdf-analysis-extension.md) - PDF analysis command structure
-- [Project Tasks Tracker](project-tasks-tracker.md) - Development progress tracking
-
-### **PDF Generation & Styling**
-
-- [PDF CSS Architecture](pdf-css-architecture.md) - CSS structure for PDF generation
-- [WeasyPrint CSS Requirements](weasyprint-css-requirements.md) - CSS compatibility guidelines
-- [WeasyPrint Troubleshooting](weasyprint-troubleshooting.md) - Common issues and solutions
+- [Visual Design Quality Evaluation](pdf/visual-design-quality-evaluation-project.md) - Design analysis initiative
+- [PDF Design System Analysis](pdf/design-system-analysis.md) - Design token extraction framework
+- [Buckia PDF Analysis Extension](pdf/buckia-pdf-analysis-extension.md) - PDF analysis command structure
+- [PDF CSS Architecture](pdf/css-architecture.md) - CSS structure for PDF generation
+- [WeasyPrint Integration Tests](pdf/WEASYPRINT_INTEGRATION_TESTS.md) - PDF generation testing
 
 ## 🚀 **Development & Operations**
 
 ### **Development**
 
 - [Development Guide](development/guide.md) - Complete development setup
+- [Architecture](development/architecture.md) - System design and backend structure
 - [VS Code Setup](development/vscode.md) - IDE configuration
 - [Testing Guide](TESTING.md) - Running and writing tests
 - [CI/CD Pipeline](development/CI.md) - Continuous integration
@@ -64,25 +55,13 @@ All Buckia documentation follows the [Thepia Documentation Standards](documentat
 ### **Project Management**
 
 - [Roadmap](project/roadmap.md) - Future development plans
-- [Changelog](CHANGES.md) - Version history and changes
-- [Configuration Corrections](CONFIGURATION_CORRECTED.md) - Configuration updates
-
-### **Specialized Documentation**
-
-- [Cover Designs](cover-designs.md) - Design guidelines for covers
-- [Executive Summary Improvements](executive-summary-whitepaper-improvement.md) - Content enhancement
-- [Whitepaper Styling Plan](whitepaper-styling-improvement-plan.md) - Style improvements
-- [Whitepaper CSS Refactor](whitepaper-css-refactor.md) - CSS restructuring
+- [Changelog](CHANGELOG.md) - Version history and changes
 
 ## 🔧 **Technical References**
 
-### **Integration Testing**
-
-- [WeasyPrint Integration Tests](WEASYPRINT_INTEGRATION_TESTS.md) - PDF generation testing
-
 ### **Authentication**
 
-- [Okta Integration](okta/) - Enterprise authentication setup
+- [Security Features](features/security.md) - Token management and access control
 
 ## 🎯 **Quick Navigation**
 
@@ -101,28 +80,15 @@ All Buckia documentation follows the [Thepia Documentation Standards](documentat
 
 ### **For PDF Analysis**
 
-- **Design analysis?** See [Visual Design Quality Evaluation](visual-design-quality-evaluation-project.md)
-- **PDF tokens?** Check [PDF Design System Analysis](pdf-design-system-analysis.md)
-- **Command usage?** Review [PDF Analysis Extension](buckia-pdf-analysis-extension.md)
+- **Design analysis?** See [Visual Design Quality Evaluation](pdf/visual-design-quality-evaluation-project.md)
+- **PDF tokens?** Check [PDF Design System Analysis](pdf/design-system-analysis.md)
+- **Command usage?** Review [PDF Analysis Extension](pdf/buckia-pdf-analysis-extension.md)
 
 ## 🤖 **For AI Assistants**
 
-When working on Buckia projects, always reference:
+When working on Buckia projects:
 
-1. **[Documentation Standards](documentation-reference-template.md)** - Follow these guidelines for all documentation
-2. **Project Context** - Check the main README.md for project-specific setup
-3. **Configuration Guides** - Review configuration documentation before making changes
-4. **Testing Requirements** - Follow established testing patterns in [TESTING.md](TESTING.md)
-
-### Quick Reference for AI
-
-```markdown
-📖 **Documentation**: Follow [Buckia Documentation Standards](documentation-reference-template.md)
-🏗️ **Architecture**: Check configuration guides before structural changes
-🧪 **Testing**: Use established patterns in [TESTING.md](TESTING.md)
-🎨 **PDF Analysis**: Reference [design analysis documentation](visual-design-quality-evaluation-project.md)
-```
-
----
-
-**Note**: This documentation covers the entire Buckia ecosystem including storage synchronization, PDF generation, design analysis, and mobile platform support. Each feature area has dedicated documentation sections above.
+1. **Project Context** — Check the main README.md for project overview
+2. **Configuration** — Review [configuration docs](configuration/overview.md) before making changes
+3. **Architecture** — See [architecture overview](development/architecture.md) for system design
+4. **Testing** — Follow established patterns in [TESTING.md](TESTING.md)

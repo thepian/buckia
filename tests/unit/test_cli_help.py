@@ -96,7 +96,7 @@ class TestCLIHelpContent:
         help_output = stdout.getvalue()
         
         # Should contain main commands
-        expected_commands = ["sync", "config", "auth", "pdf"]
+        expected_commands = ["sync", "status", "init", "pdf", "token"]
         for command in expected_commands:
             assert command in help_output, f"Main help should contain '{command}' command"
             
@@ -109,7 +109,7 @@ class TestCLIHelpContent:
         help_output = stdout.getvalue()
         
         # Should contain key options
-        expected_options = ["--bucket", "--dry-run", "--verbose"]
+        expected_options = ["--dry-run", "--delete-orphaned", "--max-workers"]
         for option in expected_options:
             assert option in help_output, f"Sync help should contain '{option}' option"
             

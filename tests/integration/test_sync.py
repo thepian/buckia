@@ -162,7 +162,6 @@ def test_sync_with_deletions(
         assert remote_path in remote_files, f"Kept file {remote_path} not found in remote storage"
 
 
-@pytest.mark.xfail(reason="Test needs review")
 def test_sync_with_filters(
     buckia_client: "BuckiaClient",
     test_directory_factory: Callable[[str, Optional[Dict[str, int]]], Path],

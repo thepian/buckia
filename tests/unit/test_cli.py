@@ -101,7 +101,7 @@ def test_parse_args_init(mock_error: MagicMock, mock_exit: MagicMock) -> None:
     except SystemExit:
         args = None
 
-    assert args.command == "init"
+    assert args.command == "init"  # pyright: ignore[reportOptionalMemberAccess]
     assert args.directory == "/test/dir"
     assert args.provider == "bunny"
     assert args.bucket_name == "test-bucket"
@@ -184,6 +184,10 @@ def test_cmd_sync_success(mock_client_class: MagicMock, mock_from_file: MagicMoc
     args.max_workers = 4
     args.quiet = False
     args.token_context = None
+    args.include_pattern = None
+    args.exclude_pattern = None
+    args.upload_only = False
+    args.force_full_sync = False
 
     # Run the command
     exit_code = cmd_sync(args)
@@ -228,6 +232,10 @@ def test_cmd_sync_failure(mock_client_class: MagicMock, mock_from_file: MagicMoc
     args.max_workers = None
     args.quiet = False
     args.token_context = None
+    args.include_pattern = None
+    args.exclude_pattern = None
+    args.upload_only = False
+    args.force_full_sync = False
 
     # Run the command
     exit_code = cmd_sync(args)

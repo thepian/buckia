@@ -49,6 +49,13 @@ class BucketConfig:
         default_factory=list
     )  # List of env vars to load from keyring
 
+    # Upload-only and immutable file settings
+    upload_only: bool = False  # If True, never download from remote
+    create_only_patterns: List[str] = field(
+        default_factory=list
+    )  # Glob patterns for immutable files (existence-check only, never overwrite)
+    state_file: str | None = None  # Path to local sync state cache file (None = auto-derive)
+
     @classmethod
     def from_file(cls, config_path: str) -> "BucketConfig":
         """
@@ -120,6 +127,11 @@ class BucketConfig:
         # Extract keyring envs
         keyring_envs = config_data.get("keyring_envs", [])
 
+        # Upload-only and immutable file settings
+        upload_only = config_data.get("upload_only", False)
+        create_only_patterns = config_data.get("create_only_patterns", [])
+        state_file = config_data.get("state_file")
+
         # Any other provider-specific settings
         provider_settings = {
             k: v
@@ -135,6 +147,9 @@ class BucketConfig:
                 "conflict_resolution",
                 "region",
                 "pdf",
+                "upload_only",
+                "create_only_patterns",
+                "state_file",
             )
         }
 
@@ -151,6 +166,9 @@ class BucketConfig:
             provider_settings=provider_settings,
             pdf=pdf_settings,
             keyring_envs=keyring_envs,
+            upload_only=upload_only,
+            create_only_patterns=create_only_patterns,
+            state_file=state_file,
         )
 
         return cls._resolve_secrets(config_obj)

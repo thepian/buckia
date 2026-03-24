@@ -154,6 +154,7 @@ class BuckiaClient:
         dry_run: bool = False,
         progress_callback: Optional[Callable[[int, int], None]] = None,
         sync_paths: list[str] | None = None,
+        force_full_sync: bool = False,
     ) -> SyncResult:
         """
         Synchronize files between local directory and remote storage
@@ -200,6 +201,7 @@ class BuckiaClient:
             dry_run=dry_run,
             progress_callback=progress_callback,
             sync_paths=sync_paths,
+            force_full_sync=force_full_sync,
         )
 
         logger.info(f"Sync operation completed: {result}")

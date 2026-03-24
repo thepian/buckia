@@ -2,13 +2,17 @@
 Base synchronization interface for Buckia
 """
 
+import fnmatch
 import hashlib
+import json
 import logging
 import os
+import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from ..config import BucketConfig
 
@@ -17,6 +21,69 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger("buckia")
+
+
+@dataclass
+class SyncStateEntry:
+    """Metadata for a single file in the local sync state cache"""
+
+    checksum: str
+    size: int
+    mtime: float
+
+
+@dataclass
+class SyncState:
+    """
+    Persistent local cache of the last successful sync.
+
+    Stored as JSON next to the .buckia config file (or at state_file path).
+    On subsequent runs, files whose mtime and size match the cache skip
+    checksum recomputation entirely.
+    """
+
+    version: int = 1
+    bucket: str = ""
+    synced_at: str = ""
+    files: Dict[str, SyncStateEntry] = field(default_factory=dict)
+
+    @classmethod
+    def load(cls, path: str) -> Optional["SyncState"]:
+        """Load state from file; returns None if missing, corrupt, or version mismatch."""
+        try:
+            with open(path, "r") as f:
+                data = json.load(f)
+            if data.get("version") != 1:
+                return None
+            state = cls(
+                version=data["version"],
+                bucket=data.get("bucket", ""),
+                synced_at=data.get("synced_at", ""),
+                files={
+                    k: SyncStateEntry(**v) for k, v in data.get("files", {}).items()
+                },
+            )
+            return state
+        except Exception:
+            return None
+
+    def save(self, path: str) -> None:
+        """Persist state to JSON file."""
+        data = {
+            "version": self.version,
+            "bucket": self.bucket,
+            "synced_at": datetime.now(timezone.utc).isoformat(),
+            "files": {
+                k: {"checksum": v.checksum, "size": v.size, "mtime": v.mtime}
+                for k, v in self.files.items()
+            },
+        }
+        os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+        with open(path, "w") as f:
+            json.dump(data, f, indent=2)
+
+    def update_file(self, path: str, checksum: str, size: int, mtime: float) -> None:
+        self.files[path] = SyncStateEntry(checksum=checksum, size=size, mtime=mtime)
 
 
 @dataclass
@@ -186,39 +253,58 @@ class BaseSync(ABC):
             self.logger.error(f"Error calculating checksum for {filepath}: {e}")
             return ""
 
-    def get_local_files(self, local_path: Path | str) -> Dict[str, str]:
+    def get_local_files(
+        self, local_path: Path | str, state: Optional[SyncState] = None
+    ) -> Dict[str, str]:
         """
-        Get all files and their checksums from local directory
+        Get all files and their checksums from local directory.
+
+        If a state cache is provided, files whose mtime and size match the cache
+        skip checksum recomputation — using the previously recorded value instead.
 
         Args:
             local_path: Root path to scan for files
+            state: Optional sync state cache to skip checksum recomputation
 
         Returns:
             Dict mapping relative file paths to checksums
         """
         local_files = {}
-        # Use Path for better cross-platform path handling
         local_path_obj = Path(local_path)
 
         for root, _, files in os.walk(local_path_obj):
             for file in files:
                 full_path = os.path.join(root, file)
                 relative_path = os.path.relpath(full_path, local_path_obj)
-                # Use forward slashes for paths (storage convention)
                 relative_path = relative_path.replace("\\", "/")
+
+                if state and relative_path in state.files:
+                    entry = state.files[relative_path]
+                    stat = os.stat(full_path)
+                    if stat.st_size == entry.size and stat.st_mtime == entry.mtime:
+                        local_files[relative_path] = entry.checksum
+                        continue
+
                 local_files[relative_path] = self.calculate_checksum(full_path)
 
         return local_files
 
     def get_local_files_in_paths(
-        self, local_path: Path | str, sync_paths: List[str]
+        self,
+        local_path: Path | str,
+        sync_paths: List[str],
+        state: Optional[SyncState] = None,
     ) -> Dict[str, str]:
         """
-        Get files and checksums from specified paths in local directory
+        Get files and checksums from specified paths in local directory.
+
+        If a state cache is provided, files whose mtime and size match the cache
+        skip checksum recomputation.
 
         Args:
             local_path: Root path to scan for files
             sync_paths: List of paths to include (relative to local_path)
+            state: Optional sync state cache to skip checksum recomputation
 
         Returns:
             Dict mapping relative file paths to checksums
@@ -230,17 +316,27 @@ class BaseSync(ABC):
             sync_path_full = local_path_obj / sync_path
 
             if sync_path_full.is_file():
-                # Single file
                 relative_path = os.path.relpath(sync_path_full, local_path_obj)
                 relative_path = relative_path.replace("\\", "/")
+                if state and relative_path in state.files:
+                    entry = state.files[relative_path]
+                    stat = os.stat(str(sync_path_full))
+                    if stat.st_size == entry.size and stat.st_mtime == entry.mtime:
+                        local_files[relative_path] = entry.checksum
+                        continue
                 local_files[relative_path] = self.calculate_checksum(str(sync_path_full))
             elif sync_path_full.is_dir():
-                # Directory - get all files within
                 for root, _, files in os.walk(sync_path_full):
                     for file in files:
                         full_path = os.path.join(root, file)
                         relative_path = os.path.relpath(full_path, local_path_obj)
                         relative_path = relative_path.replace("\\", "/")
+                        if state and relative_path in state.files:
+                            entry = state.files[relative_path]
+                            stat = os.stat(full_path)
+                            if stat.st_size == entry.size and stat.st_mtime == entry.mtime:
+                                local_files[relative_path] = entry.checksum
+                                continue
                         local_files[relative_path] = self.calculate_checksum(full_path)
             else:
                 self.logger.warning(f"Sync path not found: {sync_path}")
@@ -257,6 +353,7 @@ class BaseSync(ABC):
         sync_paths: list[str] | None = None,
         include_pattern: str | None = None,
         exclude_pattern: str | None = None,
+        force_full_sync: bool = False,
     ) -> SyncResult:
         """
         Synchronize local directory with remote storage
@@ -270,6 +367,7 @@ class BaseSync(ABC):
             sync_paths: Specific files/directories to sync (relative to local_path)
             include_pattern: Regex pattern for files to include
             exclude_pattern: Regex pattern for files to exclude
+            force_full_sync: If True, ignore state cache and recompute all checksums
 
         Returns:
             SyncResult with synchronization results
@@ -288,27 +386,79 @@ class BaseSync(ABC):
 
         result = SyncResult()
 
-        # Get local files
+        # Load sync state cache (skips checksum recomputation for unchanged immutable files)
+        state: Optional[SyncState] = None
+        state_path: Optional[str] = None
+        if not force_full_sync and self.config.state_file is not None:
+            state_path = self.config.state_file
+        elif not force_full_sync and self.config.state_file is None:
+            # Auto-derive: place state file next to the local directory
+            state_path = str(local_path / ".buckia_state.json")
+
+        if state_path and not force_full_sync:
+            state = SyncState.load(state_path)
+            if state and state.bucket != self.config.bucket_name:
+                self.logger.warning(
+                    f"State cache bucket '{state.bucket}' does not match "
+                    f"config bucket '{self.config.bucket_name}' — ignoring cache"
+                )
+                state = None
+            elif state:
+                self.logger.debug(f"Loaded sync state cache from {state_path}")
+
+        # Compile create-only glob patterns (existence-check only, never overwrite)
+        create_only_res = [
+            re.compile(fnmatch.translate(p)) for p in self.config.create_only_patterns
+        ]
+
+        # Get local files (state cache avoids checksum recomputation for unchanged files)
         self.logger.info(f"Scanning local directory: {local_path}")
         if sync_paths:
             self.logger.info(f"Limiting sync to {len(sync_paths)} specific paths")
-            local_files = self.get_local_files_in_paths(local_path, sync_paths)
+            local_files = self.get_local_files_in_paths(local_path, sync_paths, state=state)
         else:
-            local_files = self.get_local_files(local_path)
+            local_files = self.get_local_files(local_path, state=state)
+
+        # Apply include/exclude patterns to local file paths
+        if include_pattern or exclude_pattern:
+            inc_re = re.compile(include_pattern) if include_pattern else None
+            exc_re = re.compile(exclude_pattern) if exclude_pattern else None
+            local_files = {
+                path: checksum
+                for path, checksum in local_files.items()
+                if (inc_re is None or inc_re.search(path))
+                and (exc_re is None or not exc_re.search(path))
+            }
 
         # Get remote files
         self.logger.info("Scanning remote storage...")
         remote_files = self.list_remote_files()
 
+        # Warn if remote has files not in local tree or state (remote drifted ahead)
+        if state:
+            remote_ahead = {
+                p for p in remote_files if p not in local_files and p not in state.files
+            }
+            if remote_ahead:
+                self.logger.warning(
+                    f"Remote has {len(remote_ahead)} file(s) not in local state "
+                    f"— consider running with force_full_sync=True to verify"
+                )
+
         # Find files to upload (new or modified)
         to_upload = []
         for relative_path, local_checksum in local_files.items():
-            if relative_path not in remote_files:
-                # New file
+            if create_only_res and any(r.match(relative_path) for r in create_only_res):
+                # Immutable file: only upload if absent from remote (existence check only)
+                if relative_path not in remote_files:
+                    to_upload.append(relative_path)
+                    self.logger.debug(f"New immutable file to upload: {relative_path}")
+                else:
+                    result.unchanged += 1
+            elif relative_path not in remote_files:
                 to_upload.append(relative_path)
                 self.logger.debug(f"New file to upload: {relative_path}")
             elif remote_files[relative_path].get("Checksum") != local_checksum:
-                # Modified file
                 to_upload.append(relative_path)
                 self.logger.debug(f"Modified file to upload: {relative_path}")
             else:
@@ -330,26 +480,33 @@ class BaseSync(ABC):
                         to_delete.append(remote_path)
                         self.logger.debug(f"Orphaned file to delete: {remote_path}")
 
-        # Find files to download
+        # Find files to download (skipped entirely in upload_only mode)
         to_download = []
-        for remote_path, remote_data in remote_files.items():
-            # Skip if this file is in write-protected paths
-            target_path = os.path.join(local_path, remote_path)
-            if protected_patterns and any(target_path.startswith(p) for p in protected_patterns):
-                self.logger.debug(f"Skipping write-protected file: {remote_path}")
-                result.protected_skipped += 1
-                continue
+        if not self.config.upload_only:
+            for remote_path in remote_files:
+                # Never download files matching create_only_patterns
+                if create_only_res and any(r.match(remote_path) for r in create_only_res):
+                    continue
 
-            # Check if within sync_paths
-            if sync_paths and not any(
-                remote_path.startswith(str(p).replace("\\", "/")) for p in sync_paths
-            ):
-                continue
+                # Skip if this file is in write-protected paths
+                target_path = os.path.join(local_path, remote_path)
+                if protected_patterns and any(
+                    target_path.startswith(p) for p in protected_patterns
+                ):
+                    self.logger.debug(f"Skipping write-protected file: {remote_path}")
+                    result.protected_skipped += 1
+                    continue
 
-            # If file doesn't exist locally or is different, download it
-            if remote_path not in local_files:
-                to_download.append(remote_path)
-                self.logger.debug(f"New file to download: {remote_path}")
+                # Check if within sync_paths
+                if sync_paths and not any(
+                    remote_path.startswith(str(p).replace("\\", "/")) for p in sync_paths
+                ):
+                    continue
+
+                # If file doesn't exist locally or is different, download it
+                if remote_path not in local_files:
+                    to_download.append(remote_path)
+                    self.logger.debug(f"New file to download: {remote_path}")
 
         # Report what would be done in dry run mode
         if dry_run:
@@ -435,6 +592,29 @@ class BaseSync(ABC):
 
         # Update success status based on failures
         result.success = result.failed == 0
+
+        # Persist state cache after a successful sync
+        if state_path and result.success and not dry_run:
+            if state is None:
+                state = SyncState(bucket=self.config.bucket_name)
+            for relative_path in local_files:
+                full_path = str(local_path / relative_path)
+                try:
+                    stat = os.stat(full_path)
+                    state.update_file(
+                        relative_path,
+                        checksum=local_files[relative_path],
+                        size=stat.st_size,
+                        mtime=stat.st_mtime,
+                    )
+                except OSError:
+                    pass
+            state.bucket = self.config.bucket_name
+            try:
+                state.save(state_path)
+                self.logger.debug(f"Saved sync state cache to {state_path}")
+            except Exception as e:
+                self.logger.warning(f"Failed to save sync state cache: {e}")
 
         self.logger.info(str(result))
         return result

@@ -1,5 +1,34 @@
 # Swift Implementation for iOS/macOS
 
+## App Storage Architecture
+
+Buckia organises cloud storage into typed buckets by subscription tier:
+
+- **Common Storage Bucket** — demo-team folder and common user folders
+- **Premium Storage Bucket** — demo-team folder and premium user folders
+- **Enterprise Storage Bucket (Dedicated)** — demo-team folder and enterprise user folders
+
+Apps download the `<demo-team-id>` folder to show demo content. This folder is saved in the App Documents folder as `<demo-team-id>` and is read-only from the app's perspective.
+
+The app creates a new User as needed with a UID. It syncs the `<my-user-id>` folder to the bucket along with a copy of the local SQLite DB when backup is enabled. Locally this is stored as a `<my-user-id>` folder under the App Documents folder beside the app-specific SQLite DB.
+
+### Resetting App Data
+
+The App can reset all data by:
+1. Deleting the user folder
+2. Cloning the SQLite DB from the demo-team folder
+
+To update to latest demo data: sync the `<demo-team-id>` folder and apply the contents of `App.sqlite` in that folder to the local user DB.
+
+### CLI / Server Administration
+
+On a server or admin PC, bucket content is managed using the `buckia` CLI:
+
+- `assets/demo/<demo-team-id>` — local copy of `<demo-team-id>` in the bucket (demo images, clips, `App.sqlite`)
+- `assets/backup/<user-id>` — local backup of a specific user's content
+
+---
+
 ## Platform Requirements
 
 - macOS 14+

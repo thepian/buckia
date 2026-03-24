@@ -2,14 +2,16 @@
 Unit tests for the BaseSync class and SyncResult
 """
 
+import json
 import os
 import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
 from buckia.config import BucketConfig
-from buckia.sync.base import BaseSync, SyncResult
+from buckia.sync.base import BaseSync, SyncResult, SyncState, SyncStateEntry
 
 
 class TestSyncImplementation(BaseSync):
@@ -397,3 +399,291 @@ def test_sync_with_nonexistent_path():
         # This should raise NotADirectoryError
         with pytest.raises(NotADirectoryError):
             sync.sync(local_path=nonexistent_path)
+
+
+# ---------------------------------------------------------------------------
+# SyncState tests
+# ---------------------------------------------------------------------------
+
+
+def test_sync_state_load_missing_file():
+    """Missing state file returns None without raising."""
+    with tempfile.TemporaryDirectory() as tmp:
+        state = SyncState.load(os.path.join(tmp, "nonexistent.json"))
+        assert state is None
+
+
+def test_sync_state_load_corrupt_file():
+    """Corrupt JSON returns None without raising."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        f.write("not valid json{{")
+        path = f.name
+    try:
+        assert SyncState.load(path) is None
+    finally:
+        os.unlink(path)
+
+
+def test_sync_state_load_version_mismatch():
+    """State file with a different version is rejected."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        json.dump({"version": 99, "bucket": "x", "synced_at": "", "files": {}}, f)
+        path = f.name
+    try:
+        assert SyncState.load(path) is None
+    finally:
+        os.unlink(path)
+
+
+def test_sync_state_save_and_load_roundtrip():
+    """Saved state can be loaded back with the same data."""
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "state.json")
+        state = SyncState(bucket="my-bucket")
+        state.update_file("data/file.parquet", checksum="abc123", size=1024, mtime=1700000000.0)
+        state.save(path)
+
+        loaded = SyncState.load(path)
+        assert loaded is not None
+        assert loaded.bucket == "my-bucket"
+        assert loaded.version == 1
+        assert "data/file.parquet" in loaded.files
+        entry = loaded.files["data/file.parquet"]
+        assert entry.checksum == "abc123"
+        assert entry.size == 1024
+        assert entry.mtime == 1700000000.0
+
+
+# ---------------------------------------------------------------------------
+# State cache in get_local_files
+# ---------------------------------------------------------------------------
+
+
+def test_get_local_files_state_cache_hit():
+    """Files whose mtime and size match the state cache skip calculate_checksum."""
+    config = BucketConfig(provider="test", bucket_name="test-bucket")
+    sync = TestSyncImplementation(config)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        fpath = os.path.join(tmp, "data.parquet")
+        with open(fpath, "wb") as f:
+            f.write(b"x" * 512)
+
+        stat = os.stat(fpath)
+        state = SyncState(bucket="test-bucket")
+        state.update_file("data.parquet", checksum="cached-checksum", size=stat.st_size, mtime=stat.st_mtime)
+
+        with patch.object(sync, "calculate_checksum") as mock_checksum:
+            files = sync.get_local_files(tmp, state=state)
+
+        assert files["data.parquet"] == "cached-checksum"
+        mock_checksum.assert_not_called()
+
+
+def test_get_local_files_state_cache_miss_on_size():
+    """File with changed size recomputes checksum even if mtime matches."""
+    config = BucketConfig(provider="test", bucket_name="test-bucket")
+    sync = TestSyncImplementation(config)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        fpath = os.path.join(tmp, "data.parquet")
+        with open(fpath, "wb") as f:
+            f.write(b"x" * 512)
+
+        stat = os.stat(fpath)
+        state = SyncState(bucket="test-bucket")
+        # Store a different size to simulate a changed file
+        state.update_file("data.parquet", checksum="stale-checksum", size=999, mtime=stat.st_mtime)
+
+        with patch.object(sync, "calculate_checksum", return_value="fresh-checksum") as mock_checksum:
+            files = sync.get_local_files(tmp, state=state)
+
+        assert files["data.parquet"] == "fresh-checksum"
+        mock_checksum.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# upload_only mode
+# ---------------------------------------------------------------------------
+
+
+def test_sync_upload_only_no_downloads():
+    """upload_only=True means no files are ever downloaded."""
+    config = BucketConfig(provider="test", bucket_name="test-bucket", upload_only=True)
+    sync = TestSyncImplementation(config)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        with open(os.path.join(tmp, "local.txt"), "w") as f:
+            f.write("local content")
+
+        # Remote has an extra file that would normally be downloaded
+        sync.remote_files = {"remote-only.txt": {"Size": 100, "Checksum": "remote-cksum"}}
+
+        with patch.object(sync, "calculate_checksum", return_value="local-cksum"):
+            with patch.object(sync, "upload_file", return_value=True):
+                with patch.object(sync, "download_file") as mock_download:
+                    result = sync.sync(local_path=tmp)
+
+        assert result.downloaded == 0
+        mock_download.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# create_only_patterns
+# ---------------------------------------------------------------------------
+
+
+def test_sync_create_only_pattern_existing_remote_not_uploaded():
+    """Files matching create_only_patterns that exist on remote are skipped (no upload, no checksum)."""
+    config = BucketConfig(
+        provider="test",
+        bucket_name="test-bucket",
+        upload_only=True,
+        create_only_patterns=["*.parquet"],
+    )
+    sync = TestSyncImplementation(config)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        with open(os.path.join(tmp, "data.parquet"), "wb") as f:
+            f.write(b"parquet data")
+
+        # Same file already exists on remote
+        sync.remote_files = {"data.parquet": {"Size": 100, "Checksum": "remote-cksum"}}
+
+        with patch.object(sync, "calculate_checksum", return_value="local-cksum"):
+            with patch.object(sync, "upload_file") as mock_upload:
+                result = sync.sync(local_path=tmp)
+
+        assert result.unchanged == 1
+        mock_upload.assert_not_called()
+
+
+def test_sync_create_only_pattern_absent_from_remote_uploaded():
+    """Files matching create_only_patterns that are absent from remote ARE uploaded."""
+    config = BucketConfig(
+        provider="test",
+        bucket_name="test-bucket",
+        upload_only=True,
+        create_only_patterns=["*.parquet"],
+    )
+    sync = TestSyncImplementation(config)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        with open(os.path.join(tmp, "new.parquet"), "wb") as f:
+            f.write(b"parquet data")
+
+        sync.remote_files = {}  # Nothing on remote yet
+
+        with patch.object(sync, "calculate_checksum", return_value="local-cksum"):
+            with patch.object(sync, "upload_file", return_value=True) as mock_upload:
+                result = sync.sync(local_path=tmp)
+
+        assert result.uploaded == 1
+        mock_upload.assert_called_once()
+
+
+def test_sync_create_only_pattern_not_downloaded():
+    """Files matching create_only_patterns are never downloaded even if absent locally."""
+    config = BucketConfig(
+        provider="test",
+        bucket_name="test-bucket",
+        create_only_patterns=["archive/*.parquet"],
+    )
+    sync = TestSyncImplementation(config)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        # Remote has a parquet that doesn't exist locally
+        sync.remote_files = {"archive/old.parquet": {"Size": 100, "Checksum": "remote-cksum"}}
+
+        with patch.object(sync, "calculate_checksum", return_value="local-cksum"):
+            with patch.object(sync, "download_file") as mock_download:
+                sync.sync(local_path=tmp)
+
+        mock_download.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# force_full_sync
+# ---------------------------------------------------------------------------
+
+
+def test_sync_force_full_sync_ignores_state():
+    """force_full_sync=True causes calculate_checksum to be called even for cached files."""
+    config = BucketConfig(provider="test", bucket_name="test-bucket")
+    sync = TestSyncImplementation(config)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        fpath = os.path.join(tmp, "file.txt")
+        with open(fpath, "w") as f:
+            f.write("content")
+
+        stat = os.stat(fpath)
+        # Write a valid state file
+        state_path = os.path.join(tmp, ".buckia_state.json")
+        state = SyncState(bucket="test-bucket")
+        state.update_file("file.txt", checksum="cached-cksum", size=stat.st_size, mtime=stat.st_mtime)
+        state.save(state_path)
+
+        with patch.object(sync, "calculate_checksum", return_value="fresh-cksum") as mock_checksum:
+            sync.sync(local_path=tmp, force_full_sync=True)
+
+        # checksum must have been recomputed despite valid cache
+        mock_checksum.assert_called()
+
+
+# ---------------------------------------------------------------------------
+# State cache: bucket mismatch
+# ---------------------------------------------------------------------------
+
+
+def test_sync_state_bucket_mismatch_ignored():
+    """State cache is ignored when its bucket doesn't match config.bucket_name."""
+    config = BucketConfig(provider="test", bucket_name="correct-bucket")
+    sync = TestSyncImplementation(config)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        fpath = os.path.join(tmp, "file.txt")
+        with open(fpath, "w") as f:
+            f.write("content")
+
+        stat = os.stat(fpath)
+        state_path = os.path.join(tmp, ".buckia_state.json")
+        state = SyncState(bucket="wrong-bucket")  # different bucket
+        state.update_file("file.txt", checksum="cached-cksum", size=stat.st_size, mtime=stat.st_mtime)
+        state.save(state_path)
+
+        with patch.object(sync, "calculate_checksum", return_value="fresh-cksum") as mock_checksum:
+            sync.sync(local_path=tmp)
+
+        # Cache should have been ignored, so checksum was recomputed
+        mock_checksum.assert_called()
+
+
+# ---------------------------------------------------------------------------
+# State saved after sync
+# ---------------------------------------------------------------------------
+
+
+def test_sync_saves_state_after_success():
+    """State file is written after a successful sync."""
+    config = BucketConfig(provider="test", bucket_name="test-bucket")
+    sync = TestSyncImplementation(config)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        with open(os.path.join(tmp, "file.txt"), "w") as f:
+            f.write("content")
+
+        sync.remote_files = {}
+        state_path = os.path.join(tmp, ".buckia_state.json")
+        assert not os.path.exists(state_path)
+
+        with patch.object(sync, "calculate_checksum", return_value="cksum"):
+            with patch.object(sync, "upload_file", return_value=True):
+                result = sync.sync(local_path=tmp)
+
+        assert result.success
+        assert os.path.exists(state_path)
+        loaded = SyncState.load(state_path)
+        assert loaded is not None
+        assert loaded.bucket == "test-bucket"
+        assert "file.txt" in loaded.files

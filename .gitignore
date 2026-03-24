@@ -50,3 +50,8 @@ venv.bak/
 Thumbs.db
 **/.claude/settings.local.json
 /repomix-output.xml
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
