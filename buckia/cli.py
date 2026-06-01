@@ -390,6 +390,79 @@ def cmd_keyring(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_test(args: argparse.Namespace) -> int:
+    """
+    Validate the .buckia configuration and test the bucket connection.
+
+    Checks: config parsing → credential resolution → network connectivity → bucket access.
+    """
+    import os
+
+    config_file = args.config
+    if not config_file:
+        config_file = os.path.join(args.directory, DEFAULT_CONFIG_FILE)
+
+    bucket_name: str | None = getattr(args, "bucket", None)
+
+    print(f"Config file : {config_file}")
+
+    # 1. Parse config
+    try:
+        from .config import BuckiaConfig
+
+        buckia_cfg = BuckiaConfig.from_file(config_file)
+        if bucket_name:
+            if bucket_name not in buckia_cfg:
+                available = ", ".join(buckia_cfg.configs.keys())
+                print(f"✗  Bucket '{bucket_name}' not found. Available: {available}")
+                return 1
+            cfg = buckia_cfg[bucket_name]
+            bucket_label = bucket_name
+        else:
+            if len(buckia_cfg.configs) == 1:
+                bucket_label, cfg = next(iter(buckia_cfg.configs.items()))
+            elif "default" in buckia_cfg:
+                bucket_label = "default"
+                cfg = buckia_cfg["default"]
+            else:
+                available = ", ".join(buckia_cfg.configs.keys())
+                print(f"✗  Multiple buckets found; specify one with --bucket. Available: {available}")
+                return 1
+        print(f"Bucket      : {bucket_label} ({cfg.provider})")
+        print(f"✓  Config parsed")
+    except Exception as e:
+        print(f"✗  Config parse error: {e}")
+        return 1
+
+    # 2. Credentials
+    has_creds = bool(cfg.credentials)
+    has_keyring_env = any(os.getenv(e if isinstance(e, str) else e.get("name", "")) for e in cfg.keyring_envs)
+    if has_creds or has_keyring_env:
+        print(f"✓  Credentials found ({'credentials dict' if has_creds else 'env var via keyring_envs'})")
+    else:
+        token_context = cfg.token_context or cfg.provider
+        print(f"~  No direct credentials; will try TokenManager (context: {token_context})")
+
+    # 3. Connection test
+    try:
+        client = BuckiaClient(cfg)
+        results = client.test_connection()
+        connected = any(v for v in results.values() if v)
+        for method, status in results.items():
+            mark = "✓" if status else ("~" if status is None else "✗")
+            label = "Connected" if status else ("Not configured" if status is None else "Failed")
+            print(f"{mark}  {method}: {label}")
+        if connected:
+            print("\nResult: bucket accessible")
+            return 0
+        else:
+            print("\nResult: could not connect to bucket")
+            return 1
+    except Exception as e:
+        print(f"✗  Connection error: {e}")
+        return 1
+
+
 def cmd_init(args: argparse.Namespace) -> int:
     """
     Initialize a new configuration file
@@ -649,6 +722,13 @@ def parse_args(args: list[str] | None = None) -> argparse.Namespace:
     )
 
     sync_parser.set_defaults(func=cmd_sync, delete_orphaned=None)
+
+    # Test command
+    test_parser = subparsers.add_parser(
+        "test", help="Validate .buckia config and test bucket connectivity"
+    )
+    test_parser.add_argument("--bucket", help="Bucket name to test (default: first/only bucket)")
+    test_parser.set_defaults(func=cmd_test)
 
     # Status command
     status_parser = subparsers.add_parser("status", help="Show synchronization status")

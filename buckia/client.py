@@ -118,19 +118,30 @@ class BuckiaClient:
 
         # Check if we need to get credentials from token manager
         if not self.config.credentials:
-            # Get bucket context name (default to provider name)
-            context = self.config.token_context or self.config.provider
+            import os
 
-            try:
-                # Get token from keyring
-                token_manager = TokenManager(namespace="buckia")
-                token = token_manager.get_token(context)
-                if token:
-                    logger.info(f"Using API key from token manager for bucket context: {context}")
-                    # Use token for authentication
-                    self.config.credentials = {"api_key": token}
-            except Exception as e:
-                logger.warning(f"Failed to get token from keyring: {e}")
+            # 1. Check keyring_envs — explicit env var names listed in the config
+            token = None
+            for env_entry in self.config.keyring_envs:
+                env_name = env_entry if isinstance(env_entry, str) else env_entry.get("name", "")
+                if env_name:
+                    token = os.getenv(env_name)
+                    if token:
+                        logger.info(f"Using API key from environment variable: {env_name}")
+                        self.config.credentials = {"api_key": token}
+                        break
+
+            # 2. Fall back to token manager (checks buckia_buckia_<context> env var then keyring)
+            if not token:
+                context = self.config.token_context or self.config.provider
+                try:
+                    token_manager = TokenManager(namespace="buckia")
+                    token = token_manager.get_token(context)
+                    if token:
+                        logger.info(f"Using API key from token manager for bucket context: {context}")
+                        self.config.credentials = {"api_key": token}
+                except Exception as e:
+                    logger.warning(f"Failed to get token from keyring: {e}")
 
         # Create backend
         backend = get_sync_backend(self.config)

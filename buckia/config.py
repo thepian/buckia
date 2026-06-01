@@ -380,6 +380,12 @@ class BuckiaConfig:
             # PDF settings
             pdf_settings = bucket_data.get("pdf", {})
 
+            # keyring_envs, upload_only, create_only_patterns, state_file
+            keyring_envs = bucket_data.get("keyring_envs", [])
+            upload_only = bucket_data.get("upload_only", False)
+            create_only_patterns = bucket_data.get("create_only_patterns", [])
+            state_file = bucket_data.get("state_file")
+
             # Provider-specific settings (any remaining keys)
             provider_settings = {
                 k: v
@@ -395,6 +401,10 @@ class BuckiaConfig:
                     "conflict_resolution",
                     "region",
                     "pdf",
+                    "keyring_envs",
+                    "upload_only",
+                    "create_only_patterns",
+                    "state_file",
                 )
             }
 
@@ -411,6 +421,10 @@ class BuckiaConfig:
                 region=region,
                 provider_settings=provider_settings,
                 pdf=pdf_settings,
+                keyring_envs=keyring_envs,
+                upload_only=upload_only,
+                create_only_patterns=create_only_patterns,
+                state_file=state_file,
             )
 
             buckia_config.configs[bucket_name] = bucket_config

@@ -34,6 +34,24 @@ except ImportError:
 
 logger.info(f"Using {'bundled' if use_bundled else 'system'} bunnycdnpython package")
 
+# Map Buckia region names → bunnycdnpython region codes (used in subdomain: {code}.storage.bunnycdn.com)
+# Falkenstein / EU Central is the default endpoint — region code "de" or "" both work.
+_BUNNY_REGION_CODES: dict[str, str] = {
+    "eu-central": "de",   # Falkenstein (default)
+    "de": "de",
+    "uk": "uk",           # London
+    "us-east": "ny",      # New York
+    "ny": "ny",
+    "us-west": "la",      # Los Angeles
+    "la": "la",
+    "sg": "sg",           # Singapore
+    "syd": "syd",         # Sydney
+    "au": "syd",
+    "se": "se",           # Stockholm
+    "jh": "jh",           # Johannesburg
+    "za": "jh",
+}
+
 
 class BunnySync(BaseSync):
     """Synchronization backend for Bunny.net storage"""
@@ -49,18 +67,39 @@ class BunnySync(BaseSync):
         self.api_key = None
         self.password = None
 
-        # If API key is missing, try to get from TokenManager
+        # Resolve storage API key: credentials dict → keyring_envs → TokenManager
         self.storage_api_key = None
-        try:
-            # Get bucket context name (default to provider name)
-            context = getattr(self.config, "token_context", None) or "bunny"
-            token_manager = TokenManager(namespace="buckia")  # TODO namespace config
-            token = token_manager.get_token(context)
-            if token:
-                logger.info(f"Using API key from token manager for bucket context: {context}")
-                self.storage_api_key = token
-        except Exception as e:
-            logger.warning(f"Failed to get token from keyring: {e}")
+
+        # 1. Check config.credentials (set by BuckiaClient before backend is created)
+        credentials = getattr(self.config, "credentials", {}) or {}
+        token = credentials.get("api_key") or credentials.get("storage_api_key")
+        if token:
+            logger.info("Using API key from config credentials")
+            self.storage_api_key = token
+
+        # 2. Check keyring_envs — explicit env var names listed in the config
+        if not self.storage_api_key:
+            import os
+            for env_entry in getattr(self.config, "keyring_envs", []):
+                env_name = env_entry if isinstance(env_entry, str) else (env_entry.get("name", "") if isinstance(env_entry, dict) else "")
+                if env_name:
+                    token = os.getenv(env_name)
+                    if token:
+                        logger.info(f"Using API key from environment variable: {env_name}")
+                        self.storage_api_key = token
+                        break
+
+        # 3. Fall back to TokenManager (checks buckia_buckia_<context> env var then keyring)
+        if not self.storage_api_key:
+            try:
+                context = getattr(self.config, "token_context", None) or "bunny"
+                token_manager = TokenManager(namespace="buckia")  # TODO namespace config
+                token = token_manager.get_token(context)
+                if token:
+                    logger.info(f"Using API key from token manager for bucket context: {context}")
+                    self.storage_api_key = token
+            except Exception as e:
+                logger.warning(f"Failed to get token from keyring: {e}")
 
         self.hostname = self.config.get_provider_setting("hostname", "storage.bunnycdn.com")
         self.storage_region = getattr(self.config, "region", "")
@@ -82,8 +121,8 @@ class BunnySync(BaseSync):
         # Try to import bunnycdnpython package
         try:
             if self.storage_api_key:
-                # Initialize Storage with the correct parameter order
-                storage_region = self.storage_region if self.storage_region else ""
+                # bunnycdnpython uses short region codes ("de", "ny", "uk", …)
+                storage_region = self._bunny_region_code
                 self.bunny_client = Storage(
                     self.storage_api_key, self.storage_zone_name, storage_region
                 )
@@ -548,8 +587,14 @@ class BunnySync(BaseSync):
         return content_type or "application/octet-stream"
 
     @property
+    def _bunny_region_code(self) -> str:
+        """Translate a Buckia region name to a Bunny.net storage subdomain code."""
+        return _BUNNY_REGION_CODES.get(self.storage_region or "", self.storage_region or "")
+
+    @property
     def storage_api_url(self) -> str:
         """Get the API URL for storage operations"""
-        if self.storage_region:
-            return f"https://storage-{self.storage_region}.bunnycdn.com"
-        return f"https://{self.hostname}"
+        code = self._bunny_region_code
+        if code and code != "de":
+            return f"https://{code}.storage.bunnycdn.com"
+        return f"https://storage.bunnycdn.com"
