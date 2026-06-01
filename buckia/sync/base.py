@@ -59,9 +59,7 @@ class SyncState:
                 version=data["version"],
                 bucket=data.get("bucket", ""),
                 synced_at=data.get("synced_at", ""),
-                files={
-                    k: SyncStateEntry(**v) for k, v in data.get("files", {}).items()
-                },
+                files={k: SyncStateEntry(**v) for k, v in data.get("files", {}).items()},
             )
             return state
         except Exception:

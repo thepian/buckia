@@ -138,7 +138,9 @@ class BuckiaClient:
                     token_manager = TokenManager(namespace="buckia")
                     token = token_manager.get_token(context)
                     if token:
-                        logger.info(f"Using API key from token manager for bucket context: {context}")
+                        logger.info(
+                            f"Using API key from token manager for bucket context: {context}"
+                        )
                         self.config.credentials = {"api_key": token}
                 except Exception as e:
                     logger.warning(f"Failed to get token from keyring: {e}")

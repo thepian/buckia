@@ -37,18 +37,18 @@ logger.info(f"Using {'bundled' if use_bundled else 'system'} bunnycdnpython pack
 # Map Buckia region names → bunnycdnpython region codes (used in subdomain: {code}.storage.bunnycdn.com)
 # Falkenstein / EU Central is the default endpoint — region code "de" or "" both work.
 _BUNNY_REGION_CODES: dict[str, str] = {
-    "eu-central": "de",   # Falkenstein (default)
+    "eu-central": "de",  # Falkenstein (default)
     "de": "de",
-    "uk": "uk",           # London
-    "us-east": "ny",      # New York
+    "uk": "uk",  # London
+    "us-east": "ny",  # New York
     "ny": "ny",
-    "us-west": "la",      # Los Angeles
+    "us-west": "la",  # Los Angeles
     "la": "la",
-    "sg": "sg",           # Singapore
-    "syd": "syd",         # Sydney
+    "sg": "sg",  # Singapore
+    "syd": "syd",  # Sydney
     "au": "syd",
-    "se": "se",           # Stockholm
-    "jh": "jh",           # Johannesburg
+    "se": "se",  # Stockholm
+    "jh": "jh",  # Johannesburg
     "za": "jh",
 }
 
@@ -80,8 +80,13 @@ class BunnySync(BaseSync):
         # 2. Check keyring_envs — explicit env var names listed in the config
         if not self.storage_api_key:
             import os
+
             for env_entry in getattr(self.config, "keyring_envs", []):
-                env_name = env_entry if isinstance(env_entry, str) else (env_entry.get("name", "") if isinstance(env_entry, dict) else "")
+                env_name = (
+                    env_entry
+                    if isinstance(env_entry, str)
+                    else (env_entry.get("name", "") if isinstance(env_entry, dict) else "")
+                )
                 if env_name:
                     token = os.getenv(env_name)
                     if token:

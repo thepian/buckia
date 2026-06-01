@@ -426,7 +426,9 @@ def cmd_test(args: argparse.Namespace) -> int:
                 cfg = buckia_cfg["default"]
             else:
                 available = ", ".join(buckia_cfg.configs.keys())
-                print(f"✗  Multiple buckets found; specify one with --bucket. Available: {available}")
+                print(
+                    f"✗  Multiple buckets found; specify one with --bucket. Available: {available}"
+                )
                 return 1
         print(f"Bucket      : {bucket_label} ({cfg.provider})")
         print(f"✓  Config parsed")
@@ -436,9 +438,13 @@ def cmd_test(args: argparse.Namespace) -> int:
 
     # 2. Credentials
     has_creds = bool(cfg.credentials)
-    has_keyring_env = any(os.getenv(e if isinstance(e, str) else e.get("name", "")) for e in cfg.keyring_envs)
+    has_keyring_env = any(
+        os.getenv(e if isinstance(e, str) else e.get("name", "")) for e in cfg.keyring_envs
+    )
     if has_creds or has_keyring_env:
-        print(f"✓  Credentials found ({'credentials dict' if has_creds else 'env var via keyring_envs'})")
+        print(
+            f"✓  Credentials found ({'credentials dict' if has_creds else 'env var via keyring_envs'})"
+        )
     else:
         token_context = cfg.token_context or cfg.provider
         print(f"~  No direct credentials; will try TokenManager (context: {token_context})")

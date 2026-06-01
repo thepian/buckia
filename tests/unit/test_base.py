@@ -471,7 +471,9 @@ def test_get_local_files_state_cache_hit():
 
         stat = os.stat(fpath)
         state = SyncState(bucket="test-bucket")
-        state.update_file("data.parquet", checksum="cached-checksum", size=stat.st_size, mtime=stat.st_mtime)
+        state.update_file(
+            "data.parquet", checksum="cached-checksum", size=stat.st_size, mtime=stat.st_mtime
+        )
 
         with patch.object(sync, "calculate_checksum") as mock_checksum:
             files = sync.get_local_files(tmp, state=state)
@@ -495,7 +497,9 @@ def test_get_local_files_state_cache_miss_on_size():
         # Store a different size to simulate a changed file
         state.update_file("data.parquet", checksum="stale-checksum", size=999, mtime=stat.st_mtime)
 
-        with patch.object(sync, "calculate_checksum", return_value="fresh-checksum") as mock_checksum:
+        with patch.object(
+            sync, "calculate_checksum", return_value="fresh-checksum"
+        ) as mock_checksum:
             files = sync.get_local_files(tmp, state=state)
 
         assert files["data.parquet"] == "fresh-checksum"
@@ -621,7 +625,9 @@ def test_sync_force_full_sync_ignores_state():
         # Write a valid state file
         state_path = os.path.join(tmp, ".buckia_state.json")
         state = SyncState(bucket="test-bucket")
-        state.update_file("file.txt", checksum="cached-cksum", size=stat.st_size, mtime=stat.st_mtime)
+        state.update_file(
+            "file.txt", checksum="cached-cksum", size=stat.st_size, mtime=stat.st_mtime
+        )
         state.save(state_path)
 
         with patch.object(sync, "calculate_checksum", return_value="fresh-cksum") as mock_checksum:
@@ -649,7 +655,9 @@ def test_sync_state_bucket_mismatch_ignored():
         stat = os.stat(fpath)
         state_path = os.path.join(tmp, ".buckia_state.json")
         state = SyncState(bucket="wrong-bucket")  # different bucket
-        state.update_file("file.txt", checksum="cached-cksum", size=stat.st_size, mtime=stat.st_mtime)
+        state.update_file(
+            "file.txt", checksum="cached-cksum", size=stat.st_size, mtime=stat.st_mtime
+        )
         state.save(state_path)
 
         with patch.object(sync, "calculate_checksum", return_value="fresh-cksum") as mock_checksum:
