@@ -2,8 +2,17 @@
 Quick test to verify B2 backend can be initialized
 """
 
+import os
+
+import pytest
+
 from buckia.config import BucketConfig
 from buckia.sync.b2 import B2Sync
+
+pytestmark = pytest.mark.skipif(
+    not os.environ.get("buckia_buckia_demo") and not os.environ.get("BUCKIA_BUCKIA_DEMO"),
+    reason="B2 credentials not set (buckia_buckia_demo)",
+)
 
 
 def test_b2_backend_init() -> None:
