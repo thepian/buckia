@@ -9,22 +9,23 @@ Comprehensive test suite for the PDF analysis functionality including:
 """
 
 import json
-import pytest
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
+
+import pytest
 
 from buckia.pdf_analysis import (
-    PDFAnalyzer,
-    DesignTokens,
-    DesignToken,
-    ValidationResult,
-    ValidationIssue,
     AnalysisResult,
-    TypographyExtractor,
     ColorExtractor,
-    SpacingExtractor,
-    LayoutExtractor,
     ComponentExtractor,
+    DesignToken,
+    DesignTokens,
+    LayoutExtractor,
+    PDFAnalyzer,
+    SpacingExtractor,
+    TypographyExtractor,
+    ValidationIssue,
+    ValidationResult,
     analyze_pdf_design_tokens,
 )
 

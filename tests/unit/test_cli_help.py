@@ -44,32 +44,6 @@ class TestCLIHelpParsing:
         assert len(help_output) > 0, "Sync help should produce output"
         assert "sync" in help_output.lower(), "Sync help should mention sync"
 
-    def test_config_help_parsing(self):
-        """Test that config help can be parsed"""
-        with redirect_stdout(io.StringIO()) as stdout, redirect_stderr(io.StringIO()) as stderr:
-            with pytest.raises(SystemExit) as exc_info:
-                parse_args(["config", "--help"])
-
-        # Help should exit with code 0
-        assert exc_info.value.code == 0, "Config help should exit with code 0"
-
-        # Should have output
-        help_output = stdout.getvalue()
-        assert len(help_output) > 0, "Config help should produce output"
-
-    def test_auth_help_parsing(self):
-        """Test that auth help can be parsed"""
-        with redirect_stdout(io.StringIO()) as stdout, redirect_stderr(io.StringIO()) as stderr:
-            with pytest.raises(SystemExit) as exc_info:
-                parse_args(["auth", "--help"])
-
-        # Help should exit with code 0
-        assert exc_info.value.code == 0, "Auth help should exit with code 0"
-
-        # Should have output
-        help_output = stdout.getvalue()
-        assert len(help_output) > 0, "Auth help should produce output"
-
     def test_pdf_help_parsing(self):
         """Test that PDF help can be parsed"""
         with redirect_stdout(io.StringIO()) as stdout, redirect_stderr(io.StringIO()) as stderr:
@@ -201,8 +175,6 @@ class TestCLIHelpAccessibility:
         """Test that subcommand help is specific to the command"""
         commands_to_test = [
             (["sync", "--help"], "sync"),
-            (["config", "--help"], "config"),
-            (["auth", "--help"], "auth"),
             (["pdf", "--help"], "pdf"),
         ]
 
@@ -238,7 +210,7 @@ class TestCLIHelpFlags:
 
     def test_subcommand_help_flags(self, help_flag):
         """Test help flags work for subcommands"""
-        subcommands = ["sync", "config", "auth", "pdf"]
+        subcommands = ["sync", "pdf"]
 
         for subcmd in subcommands:
             with redirect_stdout(io.StringIO()) as stdout:

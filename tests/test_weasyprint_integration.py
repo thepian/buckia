@@ -8,11 +8,13 @@ WeasyPrint reference samples.
 
 import os
 import tempfile
+from pathlib import Path
+from typing import Any, Dict
+
 import pytest
 import requests
-from pathlib import Path
-from typing import Dict, Any
 import weasyprint
+
 from buckia.pdf import render_pdf_local_only
 
 

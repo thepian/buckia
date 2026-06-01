@@ -6,11 +6,18 @@ Validates that required secrets are set for testing.
 import os
 import sys
 
-# List of required secret environment variables
-REQUIRED_SECRETS = ["BUNNY_API_KEY", "BUCKIA_BUCKIA_DEMO"]
+# Required secrets: check both the uppercase canonical name and the lowercase variant
+# The workflow exports buckia_buckia_demo (lowercase); Linux env vars are case-sensitive.
+REQUIRED_SECRETS = [
+    ("BUNNY_API_KEY", "BUNNY_API_KEY"),
+    ("BUCKIA_BUCKIA_DEMO", "buckia_buckia_demo"),
+]
 
-# Check for missing secrets
-missing_secrets = [k for k in REQUIRED_SECRETS if not os.environ.get(k)]
+missing_secrets = [
+    canonical
+    for canonical, alt in REQUIRED_SECRETS
+    if not os.environ.get(canonical) and not os.environ.get(alt)
+]
 
 # Exit with error if any secrets are missing
 if missing_secrets:
